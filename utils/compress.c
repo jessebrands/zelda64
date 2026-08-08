@@ -421,8 +421,8 @@ int main(int argc, char** argv) {
     clock_t const delta = end - start;
     double const elapsed = (double) delta / CLOCKS_PER_SEC;
 
-    logf_info("Decompression finished in %.2f seconds", elapsed);
-    logf_info("Decompressed ROM check code is %016"PRIX64, out_rom.info.header.check_code);
+    logf_info("Compression finished in %.2f seconds", elapsed);
+    logf_info("Compressed ROM check code is %016"PRIX64, out_rom.info.header.check_code);
 
 cleanup_out_rom:
     zelda64_close_rom(&out_rom);
