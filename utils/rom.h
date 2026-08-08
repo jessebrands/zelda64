@@ -49,9 +49,14 @@ void
 zelda64_close_rom(struct zelda64_rom* rom);
 
 enum zelda64_result
-zelda64_copy_file(struct zelda64_rom* out_rom,
+zelda64_copy_file(struct zelda64_rom* out_rom, uint32_t offset,
                   struct zelda64_rom const* in_rom,
                   size_t file_index);
+
+enum zelda64_result
+zelda64_compress_file(struct zelda64_rom* out_rom, uint32_t offset,
+                      struct zelda64_rom const* in_rom,
+                      size_t file_index);
 
 enum zelda64_result
 zelda64_decompress_file(struct zelda64_rom* out_rom,

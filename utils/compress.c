@@ -1,5 +1,5 @@
 /*
- * decompress.c: Nintendo 64 Zelda ROM Decompressor
+ * compress.c: Nintendo 64 Zelda ROM Compressor
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of zelda64.
@@ -31,7 +31,7 @@
 #include "log.h"
 #include "rom.h"
 
-#define DECOMPRESS_PROGRAM_NAME "decompress"
+#define COMPRESS_PROGRAM_NAME "compress"
 
 enum option_result {
     OPTIONS_OK,
@@ -39,19 +39,21 @@ enum option_result {
     OPTIONS_USAGE,
 };
 
-struct decompress_options {
+struct compress_options {
     char const* in_filename;
     char const* out_filename;
     char const* cache_filename;
     char const* copy_list_filename;
+    int compression_level;
 };
 
 static void
 print_usage(FILE* stream) {
     fprintf(stream, "Usage: decompress [--cache FILE] [--copy-list FILE] rom outfile\n");
-    fprintf(stream, "Decompress a Nintendo 64 Zelda ROM.\n");
+    fprintf(stream, "Compress a Nintendo 64 Zelda ROM.\n");
     fprintf(stream, "\n");
     fprintf(stream, "Options:\n");
+    fprintf(stream, "  -l, --level N           compression level (default: 9)\n");
     fprintf(stream, "  -C, --cache FILE        write a new or update an existing compression cache\n");
     fprintf(stream, "  -L, --copy-list FILE    create a file with a list of indices that\n");
     fprintf(stream, "                            were copied instead of decompressed\n");
@@ -64,7 +66,7 @@ print_usage(FILE* stream) {
 
 static void
 print_version(FILE* stream) {
-    fprintf(stream, "decompress (libzelda64-utils) %s\n", zelda64_version_string());
+    fprintf(stream, "compress (libzelda64-utils) %s\n", zelda64_version_string());
     fprintf(stream, "Copyright (C) 2026  Jesse Gerard Brands\n");
     fprintf(stream, "This is free software; see the source for copying conditions.  There is NO\n");
     fprintf(stream, "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
@@ -73,7 +75,7 @@ print_version(FILE* stream) {
 
 static enum option_result
 usage_error(void) {
-    fprintf(stderr, "Try '" DECOMPRESS_PROGRAM_NAME " --help' for more information.\n");
+    fprintf(stderr, "Try '" COMPRESS_PROGRAM_NAME " --help' for more information.\n");
     return OPTIONS_USAGE;
 }
 
@@ -118,8 +120,8 @@ take_long_argument(char const* value, int const argc, char** argv, int* index) {
 }
 
 static enum option_result
-parse_options(struct decompress_options* options, int const argc, char** argv) {
-    *options = (struct decompress_options){0};
+parse_options(struct compress_options* options, int const argc, char** argv) {
+    *options = (struct compress_options){0};
 
     bool stop_parsing = false;
     int arguments = 0;
@@ -246,10 +248,10 @@ parse_options(struct decompress_options* options, int const argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    log_program = DECOMPRESS_PROGRAM_NAME;
+    log_program = COMPRESS_PROGRAM_NAME;
     int exit_code = EXIT_SUCCESS;
 
-    struct decompress_options options;
+    struct compress_options options;
     switch (parse_options(&options, argc, argv)) {
         case OPTIONS_DONE:
             return EXIT_SUCCESS;
@@ -262,31 +264,107 @@ int main(int argc, char** argv) {
     }
 
     // Let's say hello :-)
-    logf_info("decompress (libzelda64-utils) %s", zelda64_version_string());
+    logf_info("compress (libzelda64-utils) %s", zelda64_version_string());
     log_info("Copyright (C) 2026  Jesse Gerard Brands");
 
-    // Open the source ROM.
     struct zelda64_rom in_rom;
     enum zelda64_result result = zelda64_open_rom(options.in_filename, &in_rom);
     if (result != ZELDA64_OK) {
         return result_error(result, "could not open input ROM");
     }
 
-    // Create the destination ROM.
     struct zelda64_rom out_rom;
-    result = zelda64_create_rom(options.out_filename, DECOMPRESSED_SIZE, &in_rom.dma_info, &out_rom);
+    result = zelda64_create_rom(options.out_filename, COMPRESSED_SIZE, &in_rom.dma_info, &out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "could not open output ROM");
         goto cleanup_in_rom;
     }
 
-    // Time to get to work.
-    log_info("Decompressing ROM");
+    // This should not be hard coded, but for now...
+    int* ops = calloc(out_rom.dma_info.count, sizeof(*ops));
+    if (ops == NULL) {
+        exit_code = result_error(ZELDA64_MEMORY_ERROR, "could not allocate copy list");
+        goto cleanup_in_rom;
+    }
+
+    // TODO: This should be threaded in by the decompressor.
+    ops[0] = 1;
+    ops[1] = 1;
+    ops[2] = 1;
+    ops[3] = 1;
+    ops[4] = 1;
+    ops[5] = 1;
+    ops[6] = 1;
+    ops[7] = 1;
+    ops[8] = 1;
+    ops[9] = 1;
+
+    ops[15] = 1;
+    ops[16] = 1;
+    ops[17] = 1;
+    ops[18] = 1;
+    ops[19] = 1;
+    ops[20] = 1;
+    ops[21] = 1;
+    ops[22] = 1;
+    ops[23] = 1;
+    ops[24] = 1;
+    ops[25] = 1;
+    ops[26] = 1;
+
+    ops[942] = 1;
+    ops[944] = 1;
+    ops[946] = 1;
+    ops[948] = 1;
+    ops[950] = 1;
+    ops[952] = 1;
+    ops[954] = 1;
+    ops[956] = 1;
+    ops[958] = 1;
+    ops[960] = 1;
+    ops[962] = 1;
+    ops[964] = 1;
+    ops[966] = 1;
+    ops[968] = 1;
+    ops[970] = 1;
+    ops[972] = 1;
+    ops[974] = 1;
+    ops[976] = 1;
+    ops[978] = 1;
+    ops[980] = 1;
+    ops[982] = 1;
+    ops[984] = 1;
+    ops[986] = 1;
+    ops[988] = 1;
+    ops[990] = 1;
+    ops[992] = 1;
+    ops[994] = 1;
+    ops[996] = 1;
+    ops[998] = 1;
+    ops[1000] = 1;
+    ops[1002] = 1;
+    ops[1004] = 1;
+
+    log_info("Compressing ROM");
     clock_t const start = clock();
 
+    uint32_t rom_offset = 0;
     for (size_t i = 0; i < in_rom.dma_info.count; ++i) {
         struct zelda64_dma_entry const in_entry = in_rom.dma_table[i];
         enum zelda64_dma_kind const kind = zelda64_dma_entry_kind(&in_entry);
+
+        if (ops[i] != 0) {
+            logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
+
+            result = zelda64_copy_file(&out_rom, rom_offset, &in_rom, i);
+            if (result != ZELDA64_OK) {
+                exit_code = result_error(result, "failed to copy file");
+                goto cleanup_out_rom;
+            }
+
+            rom_offset += in_entry.vrom_end - in_entry.vrom_start;
+            continue;
+        }
 
         switch (kind) {
             case ZELDA64_DMA_EMPTY:
@@ -301,30 +379,31 @@ int main(int argc, char** argv) {
                 break;
 
             case ZELDA64_DMA_UNCOMPRESSED: {
-                logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
+                logf_progress("[%4zu/%4zu] Compressing file", i + 1, in_rom.dma_info.count);
 
-                result = zelda64_copy_file(&out_rom, in_entry.vrom_start, &in_rom, i);
+                result = zelda64_compress_file(&out_rom, rom_offset, &in_rom, i);
                 if (result != ZELDA64_OK) {
-                    exit_code = result_error(result, "failed to copy file");
+                    exit_code = result_error(result, "failed to compress file");
                     goto cleanup_out_rom;
                 }
+
                 break;
             }
 
-            case ZELDA64_DMA_COMPRESSED: {
-                logf_progress("[%4zu/%4zu] Decompressing file", i + 1, in_rom.dma_info.count);
+            default:
+                abort();
+        }
 
-                result = zelda64_decompress_file(&out_rom, &in_rom, i);
-                if (result != ZELDA64_OK) {
-                    exit_code = result_error(result, "failed to decompress file");
-                    goto cleanup_out_rom;
-                }
-                break;
-            }
+        struct zelda64_dma_entry const out_entry = out_rom.dma_table[i];
+        if (out_entry.rom_end == UINT32_MAX) {
+            // do nothing
+        } else if (out_entry.rom_end == 0x0) {
+            rom_offset += out_entry.vrom_end - out_entry.vrom_start;
+        } else {
+            rom_offset += out_entry.rom_end - out_entry.rom_start;
         }
     }
 
-    // Write out the fixed up table.
     result = zelda64_write_dmadata_to_rom(&out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "failed to write DMADATA");

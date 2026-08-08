@@ -282,7 +282,7 @@ zelda64_close_rom(struct zelda64_rom* rom) {
 }
 
 enum zelda64_result
-zelda64_copy_file(struct zelda64_rom* out_rom,
+zelda64_copy_file(struct zelda64_rom* out_rom, uint32_t const offset,
                   struct zelda64_rom const* in_rom, size_t const file_index) {
     if (out_rom == NULL || in_rom == NULL) {
         return ZELDA64_INVALID_PARAMETER;
@@ -300,7 +300,7 @@ zelda64_copy_file(struct zelda64_rom* out_rom,
     }
 
     // Set the read and write cursor of our ROMs.
-    if (fseek(out_rom->file, in_entry.vrom_start, SEEK_SET) != 0) {
+    if (fseek(out_rom->file, offset, SEEK_SET) != 0) {
         return ZELDA64_IO_ERROR;
     }
     if (fseek(in_rom->file, file_offset, SEEK_SET) != 0) {
@@ -332,8 +332,93 @@ zelda64_copy_file(struct zelda64_rom* out_rom,
     out_rom->dma_table[file_index] = (struct zelda64_dma_entry){
         .vrom_start = in_entry.vrom_start,
         .vrom_end = in_entry.vrom_end,
-        .rom_start = in_entry.vrom_start,
+        .rom_start = offset,
         .rom_end = 0x0,
+    };
+
+    return ZELDA64_OK;
+}
+
+enum zelda64_result
+zelda64_compress_file(struct zelda64_rom* out_rom, uint32_t const offset,
+                      struct zelda64_rom const* in_rom, size_t const file_index) {
+    if (out_rom == NULL || in_rom == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+
+    enum zelda64_result result = ZELDA64_OK;
+    struct zelda64_dma_entry const in_entry = in_rom->dma_table[file_index];
+
+    // We need to know the size of the file we're working with.
+    uint32_t file_offset = 0;
+    uint32_t file_size = 0;
+    result = zelda64_dma_entry_extent(&in_entry, &file_offset, &file_size);
+    if (result != ZELDA64_OK) {
+        return result;
+    }
+
+    // Set the read and write cursor of our ROMs.
+    if (fseek(out_rom->file, offset, SEEK_SET) != 0) {
+        return ZELDA64_IO_ERROR;
+    }
+    if (fseek(in_rom->file, file_offset, SEEK_SET) != 0) {
+        return ZELDA64_IO_ERROR;
+    }
+
+    // Initialize the decompressor.
+    struct yaz0_stream stream = {0};
+    if (yaz0_compress_init(&stream, YAZ0_DEFAULT_COMPRESSION, file_size)) {
+        return ZELDA64_COMPRESSION_ERROR;
+    }
+
+    enum yaz0_result decomp_result = YAZ0_OK;
+    enum yaz0_flush flush = YAZ0_NO_FLUSH;
+    uint8_t in_chunk[1024];
+    uint8_t out_chunk[1024];
+
+    size_t bytes_read = 0;
+
+    do {
+        size_t const remaining = file_size - bytes_read;
+        size_t const want = remaining < sizeof in_chunk ? remaining : sizeof in_chunk;
+
+        stream.avail_in = fread(in_chunk, 1, want, in_rom->file);
+        stream.next_in = in_chunk;
+        bytes_read += stream.avail_in;
+
+        flush = (bytes_read == file_size) ? YAZ0_FINISH : YAZ0_NO_FLUSH;
+
+        // Run the decompressor in a loop until we've received all output data.
+        do {
+            stream.next_out = out_chunk;
+            stream.avail_out = sizeof out_chunk;
+
+            decomp_result = yaz0_compress(&stream, flush);
+            if (decomp_result < YAZ0_OK) {
+                yaz0_compress_end(&stream);
+                return ZELDA64_COMPRESSION_ERROR;
+            }
+
+            // Write the decompressed bytes.
+            size_t const have = sizeof out_chunk - stream.avail_out;
+            if (fwrite(out_chunk, sizeof *out_chunk, have, out_rom->file) != have) {
+                yaz0_compress_end(&stream);
+                return ZELDA64_IO_ERROR;
+            }
+        } while (stream.avail_out == 0 && stream.avail_in != 0);
+    } while (decomp_result != YAZ0_STREAM_END);
+
+    // Ensure the file is padded:
+    uint32_t const compressed_size = (stream.total_out + 15) & -16;
+
+    yaz0_compress_end(&stream);
+
+    // Update the DMA entry for the output ROM.
+    out_rom->dma_table[file_index] = (struct zelda64_dma_entry){
+        .vrom_start = in_entry.vrom_start,
+        .vrom_end = in_entry.vrom_end,
+        .rom_start = offset,
+        .rom_end = offset + compressed_size,
     };
 
     return ZELDA64_OK;
@@ -394,7 +479,7 @@ zelda64_decompress_file(struct zelda64_rom* out_rom,
             stream.avail_out = sizeof out_chunk;
 
             decomp_result = yaz0_decompress(&stream, flush);
-            if (decomp_result < 0) {
+            if (decomp_result < YAZ0_OK) {
                 yaz0_decompress_end(&stream);
                 return ZELDA64_DECOMPRESSION_ERROR;
             }
