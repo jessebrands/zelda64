@@ -135,3 +135,32 @@ zelda64_zmf_write_chunk_header(uint8_t* data, size_t size,
 
     return ZELDA64_OK;
 }
+
+enum zelda64_result
+zelda64_zmf_chunk_extent(struct zelda64_zmf_chunk_header const* chunk,
+                         size_t const offset, size_t const total_size,
+                         size_t* payload_offset, size_t* next_offset) {
+    if (chunk == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+    if (offset > total_size || total_size - offset < ZELDA64_ZMF_CHUNK_HEADER_SIZE) {
+        return ZELDA64_OUT_OF_RANGE;
+    }
+
+    size_t const payload = offset + ZELDA64_ZMF_CHUNK_HEADER_SIZE;
+    size_t const padded = ((size_t) chunk->length + 15u) & -16;
+
+    // total_size - payload cannot wrap: the check above proved payload <= total_size.
+    if (padded > total_size - payload) {
+        return ZELDA64_BAD_MANIFEST;
+    }
+
+    if (payload_offset != NULL) {
+        *payload_offset = payload;
+    }
+    if (next_offset != NULL) {
+        *next_offset = payload + padded;
+    }
+
+    return ZELDA64_OK;
+}

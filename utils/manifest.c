@@ -18,12 +18,14 @@
  * along with zelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "manifest.h"
+#include <zelda64/zmf.h>
 
-#include "zelda64/zmf.h"
+#include "log.h"
+#include "manifest.h"
 
 static enum zelda64_result
 create_manifest_file(char const* filename, struct zelda64_rom const* rom) {
@@ -123,4 +125,104 @@ zelda64_make_rom_manifest(char const* filename, struct zelda64_rom const* rom) {
     }
 
     return zelda64_manifest_append_op_list(filename, rom);
+}
+
+enum zelda64_result
+zelda64_read_rom_op_list(char const* filename, struct zelda64_rom const* rom,
+                         uint8_t* ops, size_t const count) {
+    if (filename == NULL || rom == NULL || ops == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+
+    FILE* file = fopen(filename, "rb");
+    if (file == NULL) {
+        return ZELDA64_IO_ERROR;
+    }
+
+    enum zelda64_result result = ZELDA64_OK;
+
+    if (fseek(file, 0, SEEK_END) != 0) {
+        result = ZELDA64_IO_ERROR;
+        goto cleanup_file;
+    }
+    long const file_size = ftell(file);
+    if (file_size < 0) {
+        result = ZELDA64_IO_ERROR;
+        goto cleanup_file;
+    }
+    rewind(file);
+
+    uint8_t buffer[ZELDA64_ZMF_HEADER_SIZE];
+    if (fread(buffer, sizeof buffer, 1, file) != 1) {
+        result = ZELDA64_BAD_MANIFEST;
+        goto cleanup_file;
+    }
+
+    struct zelda64_zmf_header header;
+    result = zelda64_zmf_read_header(&header, buffer, sizeof buffer);
+    if (result != ZELDA64_OK) {
+        goto cleanup_file;
+    }
+
+    if (ZELDA64_ZMF_VERSION_MAJOR(header.version) > ZELDA64_ZMF_VERSION_MAJOR(ZELDA64_ZMF_VERSION)) {
+        result = ZELDA64_UNSUPPORTED_VERSION;
+        goto cleanup_file;
+    }
+
+    if (memcmp(header.game_code, rom->info.header.game_code, sizeof header.game_code) != 0
+        || header.game_version != rom->info.header.version) {
+        logf_error("manifest is for %.4s version %u, ROM is %.4s version %u",
+                   header.game_code, header.game_version,
+                   rom->info.header.game_code, rom->info.header.version);
+        result = ZELDA64_BAD_MANIFEST;
+        goto cleanup_file;
+    }
+
+    logf_info("Manifest '%s' is for %.4s version %d", filename, header.game_code, header.game_version + 1);
+
+    size_t position = ZELDA64_ZMF_HEADER_SIZE;
+    for (;;) {
+        if (position >= (size_t) file_size) {
+            result = ZELDA64_NOT_FOUND;
+            goto cleanup_file;
+        }
+
+        uint8_t bytes[ZELDA64_ZMF_CHUNK_HEADER_SIZE];
+        if (fseek(file, (long) position, SEEK_SET) != 0 || fread(bytes, sizeof bytes, 1, file) != 1) {
+            result = ZELDA64_BAD_MANIFEST;
+            goto cleanup_file;
+        }
+
+        struct zelda64_zmf_chunk_header chunk;
+        result = zelda64_zmf_read_chunk_header(&chunk, bytes, sizeof bytes);
+        if (result != ZELDA64_OK) {
+            goto cleanup_file;
+        }
+
+        size_t payload = 0;
+        size_t next = 0;
+        result = zelda64_zmf_chunk_extent(&chunk, position, (size_t) file_size,
+                                          &payload, &next);
+        if (result != ZELDA64_OK) {
+            goto cleanup_file;
+        }
+
+        if (memcmp(chunk.type, ZELDA64_ZMF_TYPE_OPS, sizeof chunk.type) == 0) {
+            if (chunk.length != count) {
+                logf_error("manifest describes %" PRIu32 " files, ROM has %zu",
+                           chunk.length, count);
+                result = ZELDA64_BAD_MANIFEST;
+            } else if (fseek(file, (long) payload, SEEK_SET) != 0
+                       || fread(ops, 1, count, file) != count) {
+                result = ZELDA64_BAD_MANIFEST;
+            }
+            goto cleanup_file;
+        }
+
+        position = next;
+    }
+
+cleanup_file:
+    fclose(file);
+    return result;
 }

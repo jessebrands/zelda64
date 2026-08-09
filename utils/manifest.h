@@ -26,4 +26,8 @@
 enum zelda64_result
 zelda64_make_rom_manifest(char const* filename, struct zelda64_rom const* rom);
 
+enum zelda64_result
+zelda64_read_rom_op_list(char const* filename, struct zelda64_rom const* rom,
+                         uint8_t* ops, size_t count);
+
 #endif //LIBZELDA64_MANIFEST_H

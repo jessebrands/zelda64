@@ -36,6 +36,8 @@
 #define ZELDA64_ZMF_HEADER_SIZE       0x40u
 #define ZELDA64_ZMF_CHUNK_HEADER_SIZE 0x10u
 
+#define ZELDA64_ZMF_TYPE_OPS "ZMOP"
+
 struct zelda64_zmf_header {
     uint32_t version;
     uint8_t reserved0[8];
@@ -106,5 +108,20 @@ zelda64_zmf_read_chunk_header(struct zelda64_zmf_chunk_header* chunk,
 ZELDA64_API enum zelda64_result
 zelda64_zmf_write_chunk_header(uint8_t* data, size_t size,
                                struct zelda64_zmf_chunk_header const* chunk);
+
+/*!
+ * \brief Locates a chunk's payload and the chunk that follows it.
+ *
+ * \param chunk Decoded chunk header.
+ * \param offset Offset of that chunk header within the manifest.
+ * \param total_size Total size of the manifest in bytes.
+ * \param payload_offset Receives the payload offset, or NULL.
+ * \param next_offset Receives the next chunk header's offset, or NULL.
+ * \return ZELDA64_BAD_MANIFEST if the chunk claims more than the manifest holds.
+ */
+ZELDA64_API enum zelda64_result
+zelda64_zmf_chunk_extent(struct zelda64_zmf_chunk_header const* chunk,
+                         size_t offset, size_t total_size,
+                         size_t* payload_offset, size_t* next_offset);
 
 #endif //LIBZELDA64_ZMF_H

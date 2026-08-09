@@ -30,6 +30,7 @@
 #include <zelda64/zelda64.h>
 
 #include "log.h"
+#include "manifest.h"
 #include "rom.h"
 
 #define COMPRESS_PROGRAM_NAME "compress"
@@ -43,8 +44,7 @@ enum option_result {
 struct compress_options {
     char const* in_filename;
     char const* out_filename;
-    char const* cache_filename;
-    char const* copy_list_filename;
+    char const* manifest_filename;
 
     int compression_level;
     bool pad_output;
@@ -53,13 +53,12 @@ struct compress_options {
 
 static void
 print_usage(FILE* stream) {
-    fprintf(stream, "Usage: compress [--cache FILE] [--copy-list FILE] rom outfile\n");
+    fprintf(stream, "Usage: compress [--manifest FILE] rom outfile\n");
     fprintf(stream, "Compress a Nintendo 64 Zelda ROM.\n");
     fprintf(stream, "\n");
     fprintf(stream, "Options:\n");
     fprintf(stream, "  -l, --level N           compression level (default: 9)\n");
-    fprintf(stream, "  -C, --cache FILE        write a new or update an existing compression cache\n");
-    fprintf(stream, "  -L, --copy-list FILE    file with indices that should be copied\n");
+    fprintf(stream, "  -M, --manifest FILE     manifest file\n");
     fprintf(stream, "      --fill mode         specify method for filling non-written bytes\n");
     fprintf(stream, "      --pad               round the output ROM size up to a power of 2\n");
     fprintf(stream, "  -v, --verbose           print logging messages (repeat to increase\n");
@@ -183,19 +182,10 @@ parse_options(struct compress_options* options, int const argc, char** argv) {
                 continue;
             }
 
-            if (is_long_option(option, length, "cache")) {
-                options->cache_filename = take_long_argument(value, argc, argv, &i);
-                if (options->cache_filename == NULL) {
-                    log_error("option '--cache' requires an argument");
-                    return usage_error();
-                }
-                continue;
-            }
-
-            if (is_long_option(option, length, "copy-list")) {
-                options->copy_list_filename = take_long_argument(value, argc, argv, &i);
-                if (options->copy_list_filename == NULL) {
-                    log_error("option '--copy-list' requires an argument");
+            if (is_long_option(option, length, "manifest")) {
+                options->manifest_filename = take_long_argument(value, argc, argv, &i);
+                if (options->manifest_filename == NULL) {
+                    log_error("option '--manifest' requires an argument");
                     return usage_error();
                 }
                 continue;
@@ -237,19 +227,14 @@ parse_options(struct compress_options* options, int const argc, char** argv) {
                     log_verbosity += 1;
                     break;
 
-                case 'C':
-                case 'L': {
+                case 'M': {
                     char const letter = *p;
                     char const* const value = take_short_argument(p + 1, argc, argv, &i);
                     if (value == NULL) {
                         logf_error("option '-%c' requires an argument", letter);
                         return usage_error();
                     }
-                    if (letter == 'C') {
-                        options->cache_filename = value;
-                    } else {
-                        options->copy_list_filename = value;
-                    }
+                    options->manifest_filename = value;
 
                     // Yes, goto, because we need to stop scanning here.
                     goto next_argument;
@@ -294,6 +279,11 @@ int main(int argc, char** argv) {
             break;
     }
 
+    if (options.manifest_filename == NULL) {
+        log_error("no manifest file specified");
+        return EXIT_FAILURE;
+    }
+
     // Let's say hello :-)
     logf_info("compress (libzelda64-utils) %s", zelda64_version_string());
     log_info("Copyright (C) 2026  Jesse Gerard Brands");
@@ -304,6 +294,19 @@ int main(int argc, char** argv) {
         return result_error(result, "could not open input ROM");
     }
 
+    // This should not be hard coded, but for now...
+    uint8_t* ops = calloc(in_rom.dma_info.count, sizeof(*ops));
+    if (ops == NULL) {
+        exit_code = result_error(ZELDA64_MEMORY_ERROR, "could not allocate copy list");
+        goto cleanup_in_rom;
+    }
+
+    result = zelda64_read_rom_op_list(options.manifest_filename, &in_rom, ops, in_rom.dma_info.count);
+    if (result != ZELDA64_OK) {
+        exit_code = result_error(result, "could not get operations list");
+        goto cleanup_in_rom;
+    }
+
     struct zelda64_rom out_rom;
     result = zelda64_create_rom(options.out_filename, &in_rom.dma_info, &out_rom);
     if (result != ZELDA64_OK) {
@@ -311,118 +314,41 @@ int main(int argc, char** argv) {
         goto cleanup_in_rom;
     }
 
-    // This should not be hard coded, but for now...
-    int* ops = calloc(out_rom.dma_info.count, sizeof(*ops));
-    if (ops == NULL) {
-        exit_code = result_error(ZELDA64_MEMORY_ERROR, "could not allocate copy list");
-        goto cleanup_in_rom;
-    }
-
-    // TODO: This should be threaded in by the decompressor.
-    ops[0] = 1;
-    ops[1] = 1;
-    ops[2] = 1;
-    ops[3] = 1;
-    ops[4] = 1;
-    ops[5] = 1;
-    ops[6] = 1;
-    ops[7] = 1;
-    ops[8] = 1;
-    ops[9] = 1;
-
-    ops[15] = 1;
-    ops[16] = 1;
-    ops[17] = 1;
-    ops[18] = 1;
-    ops[19] = 1;
-    ops[20] = 1;
-    ops[21] = 1;
-    ops[22] = 1;
-    ops[23] = 1;
-    ops[24] = 1;
-    ops[25] = 1;
-    ops[26] = 1;
-
-    ops[942] = 1;
-    ops[944] = 1;
-    ops[946] = 1;
-    ops[948] = 1;
-    ops[950] = 1;
-    ops[952] = 1;
-    ops[954] = 1;
-    ops[956] = 1;
-    ops[958] = 1;
-    ops[960] = 1;
-    ops[962] = 1;
-    ops[964] = 1;
-    ops[966] = 1;
-    ops[968] = 1;
-    ops[970] = 1;
-    ops[972] = 1;
-    ops[974] = 1;
-    ops[976] = 1;
-    ops[978] = 1;
-    ops[980] = 1;
-    ops[982] = 1;
-    ops[984] = 1;
-    ops[986] = 1;
-    ops[988] = 1;
-    ops[990] = 1;
-    ops[992] = 1;
-    ops[994] = 1;
-    ops[996] = 1;
-    ops[998] = 1;
-    ops[1000] = 1;
-    ops[1002] = 1;
-    ops[1004] = 1;
-
     logf_info("Compressing ROM with libyaz0 %s", yaz0_version_string());
     clock_t const start = clock();
 
     uint32_t rom_offset = 0;
     for (size_t i = 0; i < in_rom.dma_info.count; ++i) {
         struct zelda64_dma_entry const in_entry = in_rom.dma_table[i];
-        enum zelda64_dma_kind const kind = zelda64_dma_entry_kind(&in_entry);
 
-        if (ops[i] != 0) {
-            logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
-
-            result = zelda64_copy_file(&out_rom, rom_offset, &in_rom, i);
-            if (result != ZELDA64_OK) {
-                exit_code = result_error(result, "failed to copy file");
-                goto cleanup_out_rom;
-            }
-
-            rom_offset += in_entry.vrom_end - in_entry.vrom_start;
-            continue;
-        }
-
-        switch (kind) {
-            case ZELDA64_DMA_EMPTY:
-                logf_progress("[%4zu/%4zu] Skipping empty file", i + 1, in_rom.dma_info.count);
-                out_rom.dma_table[i] = in_entry;
+        switch (ops[i]) {
+            case ZELDA64_OP_COPY:
+                logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
+                result = zelda64_copy_file(&out_rom, rom_offset, &in_rom, i);
                 break;
 
-            case ZELDA64_DMA_DELETED:
-                logf_progress("[%4zu/%4zu] Skipping deleted file", i + 1, in_rom.dma_info.count);
-
-                out_rom.dma_table[i] = in_entry;
-                break;
-
-            case ZELDA64_DMA_UNCOMPRESSED: {
+            case ZELDA64_OP_COMPRESS:
                 logf_progress("[%4zu/%4zu] Compressing file", i + 1, in_rom.dma_info.count);
-
                 result = zelda64_compress_file(&out_rom, rom_offset, &in_rom, i);
-                if (result != ZELDA64_OK) {
-                    exit_code = result_error(result, "failed to compress file");
-                    goto cleanup_out_rom;
-                }
-
                 break;
-            }
+
+            case ZELDA64_OP_SKIP:
+                logf_progress("[%4zu/%4zu] Skipping file", i + 1, in_rom.dma_info.count);
+                out_rom.dma_table[i] = in_entry;
+                break;
+
+            case ZELDA64_OP_DELETE:
+                logf_progress("[%4zu/%4zu] Deleting file", i + 1, in_rom.dma_info.count);
+                out_rom.dma_table[i] = in_entry;
+                break;
 
             default:
-                abort();
+                abort();  /* validate_ops already rejected these */
+        }
+
+        if (result != ZELDA64_OK) {
+            exit_code = result_error(result, "operation failed");
+            goto cleanup_out_rom;
         }
 
         struct zelda64_dma_entry const out_entry = out_rom.dma_table[i];

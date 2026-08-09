@@ -15,6 +15,7 @@ zelda64_enable_warnings(decompress)
 add_executable(compress
         compress.c
         log.c
+        manifest.c
         rom.c)
 
 target_link_libraries(compress
