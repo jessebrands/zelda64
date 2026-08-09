@@ -8,7 +8,9 @@ function(zelda64_add_decompress_test input_rom check_rom)
             FIXTURES_SETUP "decompressed_rom_${base_name}")
 
     add_test(NAME "Decompress.${base_name}"
-            COMMAND decompress -v --pad "${input_rom}" "${out_rom}")
+            COMMAND decompress -v --pad
+            --manifest "${base_name}.zmf"
+            "${input_rom}" "${out_rom}")
     set_tests_properties("Decompress.${base_name}" PROPERTIES
             FIXTURES_SETUP "decompressed_rom_${base_name}"
             DEPENDS "Decompress.${base_name}.Clean"
