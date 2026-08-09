@@ -24,6 +24,7 @@
 #include "zelda64/zmf.h"
 
 #include "bytes.h"
+#include "crc32.h"
 
 #define ZMF_OFFSET_MAGIC        0x00
 #define ZMF_OFFSET_VERSION      0x04
@@ -40,6 +41,13 @@
 #define ZMF_CHUNK_OFFSET_RESERVED 0x0C
 
 static char const zmf_magic[4] = {'Z', '6', '4', 'M'};
+
+uint32_t zelda64_zmf_chunk_crc32(uint8_t const* data, size_t size) {
+    if (data == NULL || size == 0) {
+        return 0;
+    }
+    return zelda64_crc32(0, data, size);
+}
 
 enum zelda64_result
 zelda64_zmf_read_header(struct zelda64_zmf_header* header,
