@@ -95,24 +95,7 @@ zelda64_manifest_append_op_list(char const* filename, struct zelda64_rom const* 
         for (size_t j = 0; j < count; ++j) {
             struct zelda64_dma_entry const* entry = &rom->dma_table[i + j];
             enum zelda64_dma_kind const kind = zelda64_dma_entry_kind(entry);
-
-            switch (kind) {
-                case ZELDA64_DMA_EMPTY:
-                    chunk[j] = 0;
-                    break;
-
-                case ZELDA64_DMA_DELETED:
-                    chunk[j] = 3;
-                    break;
-
-                case ZELDA64_DMA_UNCOMPRESSED:
-                    chunk[j] = 1;
-                    break;
-
-                case ZELDA64_DMA_COMPRESSED:
-                    chunk[j] = 2;
-                    break;
-            }
+            chunk[j] = (uint8_t) zelda64_dma_kind_to_op(kind);
         }
 
         if (fwrite(chunk, sizeof chunk, 1, file) != 1) {

@@ -83,6 +83,13 @@ enum zelda64_dma_kind {
     ZELDA64_DMA_COMPRESSED,
 };
 
+enum zelda64_op {
+    ZELDA64_OP_SKIP = 0,
+    ZELDA64_OP_COPY = 1,
+    ZELDA64_OP_COMPRESS = 2,
+    ZELDA64_OP_DELETE = 3,
+};
+
 struct zelda64_rom_header {
     uint8_t reserved0; // 0x00  0x80 on all commercial ROMs
     uint8_t pi_config[3]; // 0x01  PI BSD DOM1 RLS/PGS/PWD/LAT
@@ -255,6 +262,9 @@ zelda64_write_dmadata(uint8_t* data, size_t size,
 
 ZELDA64_API enum zelda64_dma_kind
 zelda64_dma_entry_kind(struct zelda64_dma_entry const* entry);
+
+ZELDA64_API enum zelda64_op
+zelda64_dma_kind_to_op(enum zelda64_dma_kind kind);
 
 ZELDA64_API enum zelda64_result
 zelda64_dma_entry_extent(struct zelda64_dma_entry const* entry,
