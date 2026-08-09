@@ -1,0 +1,158 @@
+Brief
+
+    zelda64 manifest files (typically using the extension .zmf) are binary
+    files that describe how a Nintendo 64 Zelda ROM can be created from a
+    decompressed ROM. It contains all information in a single file that can be
+    shared in the same manner a patch file can be shared.
+
+    The file format encodes all multibyte values as big endian and all chunks
+    must be aligned and padded to 16 bytes. The design of the file format is
+    inspired by the IFF (Interchange File Format, see reference below) in how
+    it stores its data.
+
+Header
+
+    All manifest files start with a 64 byte header.
+
+        +----------+------------+--------------------------------------+
+        |  offset  |    type    |             Description              |
+        +----------+------------+--------------------------------------+
+        |    0x00  |   char[4]  |  Magic constant ("Z64M")             |
+        |    0x04  |  uint32_t  |  Format version                      |
+        |    0x08  |   char[8]  |  Reserved                            |
+        |    0x10  |   char[4]  |  Game code                           |
+        |    0x14  |   uint8_t  |  Game version                        |
+        |    0x15  |   char[3]  |  Reserved                            |
+        |    0x18  |  uint64_t  |  Check code                          |
+        |    0x20  |  char[32]  |  Program                             |
+        +----------+------------+--------------------------------------+
+
+    The first field is always "Z64M", which must be validated by any proper
+    implementation to ensure that the file is really a Z64M file.
+
+    The second field is the version of the file format, packed into a double
+    word like this: 0xMMMMmmmm. The current version is 0x00010000. Proper
+    implementations should always be able to read files of the same major
+    version or less, and reject files of a greater major version.
+
+    The game code field is a 4 letter code of the created ROM, for example
+    this field would be "CZLE" for the US release of Legend of Zelda: Ocarina
+    of Time.
+
+    The game version field is the biased version number of the game, exactly
+    the same as it appeared in the ROM. For the 1.0 version of Ocarina of Time
+    this value would be 0.
+
+    The check code is the 64-bit check code of the ROM that is produced by the
+    manifest file, which can be used for verification purposes. The check code
+    is optional and may be zeroed out.
+
+    The program field can optionally denote the program that created the
+    manifest file. It must be a 32-byte NUL-terminated string. For example,
+    manifests created by `decompress` from `libzelda64-utils` will set this to
+    "libzelda64 0.1".
+
+Chunks
+
+    Following the header is zero or more chunks. Every chunk starts with a
+    16-byte header.
+
+        +----------+------------+--------------------------------------+
+        |  offset  |    type    |             Description              |
+        +----------+------------+--------------------------------------+
+        |    0x00  |   char[4]  |  Magic                               |
+        |    0x04  |  uint32_t  |  Length in bytes                     |
+        |    0x08  |  uint32_t  |  CRC-32 checksum                     |
+        |    0x0C  |   char[4]  |  Reserved                            |
+        +----------+------------+--------------------------------------+
+
+    Each chunk header begins a 4-byte magic to describe what kind of chunk it
+    is. The first two bytes should be treated as a namespace for any extensions
+    specific to an application. The "ZM" namespace is reserved for libzelda64.
+
+    The only other mandatory field in the header is the length in bytes. This
+    field contains the size of the chunk's data minus the 16 bytes for the
+    header.
+
+    The third field is an optional CRC-32 (CRC32/IEEE, see reference below)
+    checksum of the data in the chunk.
+
+    The last four bytes are reserved for future use.
+
+    Every chunk begins aligned to 16 bytes in the file. Implementations can
+    skip to the next chunk by aligning the length of the chunk:
+
+        next = current + 16 + ((length + 15) & -16)
+
+Check Code Chunk [ZMCC]
+
+    The ZMCC chunk describes a list of valid ROMs that may be used as input
+    for creating the ROM described in the manifest. Every ROM is described as
+    a pair of check codes. The first check code of the pair is the compressed
+    ROM's check code and the second check code is that of the decompressed ROM.
+
+    Implementations should reject ROMs that have a mismatching check code. If
+    the check code matches a compressed ROM, it must be decompressed first.
+
+File Operations Chunk [ZMOP]
+
+    The ZMOP chunk describes the operations that must be carried out by the
+    compressor to produce the compressed ROM. It is encoded as an array of
+    bytes whose indices correspond to their indices in the DMADATA.
+
+    Each byte can be one of the following values:
+
+        00  Skip the index and record an empty file
+        01  Copy from the uncompressed ROM to the compressed ROM
+        02  Compress the file from the uncompressed ROM
+        03  Marks the file as deleted
+
+    The length of the array is the chunk length. The length of the array must
+    equal the DMA entry count or be rejected.
+
+Ocarina of Time Randomizer Patch File Chunk [RAPF]
+
+    This is an example chunk for how the format could be extended.
+
+    This chunk stores a ZPF (Zelda Patch File, see reference below) that must
+    be applied to the decompressed ROM before it is compressed.
+
+Example
+
+    Included is a small dump of the first 144 bytes of a ZMF file.
+
+        5A 36 34 4D 00 01 00 00 00 00 00 00 00 00 00 00   Z64M............
+        43 5A 4C 45 00 00 00 00 EC 70 11 B7 76 16 D7 2B   CZLE....ìp.·v.×+
+        6C 69 62 7A 65 6C 64 61 36 34 20 30 2E 31 20 28   libzelda64 0.1 (
+        6C 69 62 79 61 7A 30 20 30 2E 32 29 00 00 00 00   libyaz0 0.2)....
+        5A 4D 43 43 00 00 00 10 00 00 00 00 00 00 00 00   ZMCC............
+        EC 70 11 B7 76 16 D7 2B 93 52 2E 7B E5 06 D4 27   ìp.·v.×+“R.{å.Ô'
+        5A 4D 4F 50 00 00 05 F6 00 00 00 00 00 00 00 00   ZMOP...ö........
+        01 01 01 01 01 01 01 01 01 01 02 02 02 02 02 01   ................
+        01 01 01 01 01 01 01 01 01 01 01 02 02 02 02 02   ................
+
+Conclusion
+
+    I hope that the ZMF file format can be useful to the community and that
+    this format will be useful to anyone trying to figure it out.
+
+    Jesse Gerard Brands
+    jesse@jgbrands.nl
+
+References
+
+    [IFF]
+    Jerry Morrison, Electronic Arts,
+    "EA IFF 85" Standard for Interchange Format Files
+    https://www.loc.gov/preservation/digital/formats/fdd/fdd000115.shtml
+
+    [CRC-32]
+    P. Koopman, ECE Department & ICES, Carnegie Mellon University,
+    Institute of Electrical and Electronics Engineers
+    "32-bit cyclic redundancy codes for Internet applications"
+    https://ieeexplore.ieee.org/document/1028931
+
+    [ZPF]
+    Ocarina of Time Randomizer Project,
+    "ZPFZ patch format"
+    https://github.com/OoTRandomizer/OoT-Randomizer/blob/Dev/Notes/ZPFZ%20patch%20format.txt
