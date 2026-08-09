@@ -55,12 +55,13 @@ struct zelda64_zmf_chunk_header {
 
 /*!
  * \brief Calculates the checksum for a ZMF chunk payload.
+ * \param checksum Partial checksum of the data, or zero.
  * \param data Chunk payload, may be NULL when size is zero.
  * \param size Payload length in bytes.
  * \return CRC-32/IEEE of the payload; zero for an empty payload.
  */
 ZELDA64_API uint32_t
-zelda64_zmf_chunk_crc32(uint8_t const* data, size_t size);
+zelda64_zmf_chunk_checksum(uint32_t checksum, uint8_t const* data, size_t size);
 
 /*!
  * \brief Decodes a buffer into a ZMF header.

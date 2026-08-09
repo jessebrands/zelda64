@@ -42,11 +42,12 @@
 
 static char const zmf_magic[4] = {'Z', '6', '4', 'M'};
 
-uint32_t zelda64_zmf_chunk_crc32(uint8_t const* data, size_t size) {
+uint32_t
+zelda64_zmf_chunk_checksum(uint32_t const checksum, uint8_t const* data, size_t const size) {
     if (data == NULL || size == 0) {
         return 0;
     }
-    return zelda64_crc32(0, data, size);
+    return zelda64_crc32(checksum, data, size);
 }
 
 enum zelda64_result
