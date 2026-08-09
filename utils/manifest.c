@@ -26,7 +26,7 @@
 #include "zelda64/zmf.h"
 
 static enum zelda64_result
-create_manifest_file(const char* filename, struct zelda64_rom const* rom) {
+create_manifest_file(char const* filename, struct zelda64_rom const* rom) {
     FILE* file = fopen(filename, "wb");
     if (file == NULL) {
         return ZELDA64_IO_ERROR;
@@ -57,7 +57,7 @@ create_manifest_file(const char* filename, struct zelda64_rom const* rom) {
                : ZELDA64_IO_ERROR;
 }
 
-enum zelda64_result
+static enum zelda64_result
 zelda64_manifest_append_op_list(char const* filename, struct zelda64_rom const* rom) {
     enum zelda64_result result = ZELDA64_OK;
 
@@ -86,10 +86,13 @@ zelda64_manifest_append_op_list(char const* filename, struct zelda64_rom const* 
         }
     }
 
+    size_t entries_out = 0;
     for (size_t i = 0; i < rom->dma_info.count; i += 0x10) {
         uint8_t chunk[0x10] = {0};
+        size_t const remaining = rom->dma_info.count - entries_out;
+        size_t const count = remaining < sizeof chunk ? remaining : sizeof chunk;
 
-        for (size_t j = 0; j < 0x10; ++j) {
+        for (size_t j = 0; j < count; ++j) {
             struct zelda64_dma_entry const* entry = &rom->dma_table[i + j];
             enum zelda64_dma_kind const kind = zelda64_dma_entry_kind(entry);
 
@@ -116,6 +119,8 @@ zelda64_manifest_append_op_list(char const* filename, struct zelda64_rom const* 
             result = ZELDA64_IO_ERROR;
             goto cleanup_file;
         }
+
+        entries_out += count;
     }
 
 cleanup_file:
