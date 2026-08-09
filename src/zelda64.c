@@ -30,6 +30,9 @@ char const* zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_COMPRESSION_ERROR: return "compression error";
         case ZELDA64_DECOMPRESSION_ERROR: return "decompression error";
         case ZELDA64_IO_ERROR: return "i/o error";
+        case ZELDA64_BAD_MANIFEST: return "bad manifest file";
+        case ZELDA64_UNSUPPORTED_VERSION: return "unsupported version";
+        case ZELDA64_NOT_FOUND: return "not found";
     }
     return "unknown";
 }
