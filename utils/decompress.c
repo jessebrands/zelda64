@@ -30,6 +30,7 @@
 #include <zelda64/zelda64.h>
 
 #include "log.h"
+#include "manifest.h"
 #include "rom.h"
 
 #define DECOMPRESS_PROGRAM_NAME "decompress"
@@ -43,8 +44,7 @@ enum option_result {
 struct decompress_options {
     char const* in_filename;
     char const* out_filename;
-    char const* cache_filename;
-    char const* copy_list_filename;
+    char const* manifest_filename;
 
     bool pad_output;
     enum zelda64_fill_mode fill;
@@ -52,19 +52,17 @@ struct decompress_options {
 
 static void
 print_usage(FILE* stream) {
-    fprintf(stream, "Usage: decompress [--cache FILE] [--copy-list FILE] rom outfile\n");
+    fprintf(stream, "Usage: decompress [-M FILE] rom outfile\n");
     fprintf(stream, "Decompress a Nintendo 64 Zelda ROM.\n");
     fprintf(stream, "\n");
     fprintf(stream, "Options:\n");
-    fprintf(stream, "  -C, --cache FILE        write a new or update an existing compression cache\n");
-    fprintf(stream, "  -L, --copy-list FILE    create a file with a list of indices that\n");
-    fprintf(stream, "                            were copied instead of decompressed\n");
-    fprintf(stream, "      --fill mode         specify method for filling non-written bytes\n");
-    fprintf(stream, "      --pad               round the output ROM size up to a power of 2\n");
-    fprintf(stream, "  -v, --verbose           print logging messages (repeat to increase\n");
-    fprintf(stream, "                            verbosity)\n");
-    fprintf(stream, "      --version           print version information\n");
-    fprintf(stream, "      --help              print this message\n");
+    fprintf(stream, "  -M, --manifest FILE       create a manifest file of the ROM\n");
+    fprintf(stream, "      --fill mode           specify method for filling non-written bytes\n");
+    fprintf(stream, "      --pad                 round the output ROM size up to a power of 2\n");
+    fprintf(stream, "  -v, --verbose             print logging messages (repeat to increase\n");
+    fprintf(stream, "                              verbosity)\n");
+    fprintf(stream, "      --version             print version information\n");
+    fprintf(stream, "      --help                print this message\n");
     fprintf(stream, "\n");
 }
 
@@ -182,19 +180,10 @@ parse_options(struct decompress_options* options, int const argc, char** argv) {
                 continue;
             }
 
-            if (is_long_option(option, length, "cache")) {
-                options->cache_filename = take_long_argument(value, argc, argv, &i);
-                if (options->cache_filename == NULL) {
-                    log_error("option '--cache' requires an argument");
-                    return usage_error();
-                }
-                continue;
-            }
-
-            if (is_long_option(option, length, "copy-list")) {
-                options->copy_list_filename = take_long_argument(value, argc, argv, &i);
-                if (options->copy_list_filename == NULL) {
-                    log_error("option '--copy-list' requires an argument");
+            if (is_long_option(option, length, "manifest")) {
+                options->manifest_filename = take_long_argument(value, argc, argv, &i);
+                if (options->manifest_filename == NULL) {
+                    log_error("option '--manifest' requires an argument");
                     return usage_error();
                 }
                 continue;
@@ -236,19 +225,14 @@ parse_options(struct decompress_options* options, int const argc, char** argv) {
                     log_verbosity += 1;
                     break;
 
-                case 'C':
-                case 'L': {
+                case 'M': {
                     char const letter = *p;
                     char const* const value = take_short_argument(p + 1, argc, argv, &i);
                     if (value == NULL) {
                         logf_error("option '-%c' requires an argument", letter);
                         return usage_error();
                     }
-                    if (letter == 'C') {
-                        options->cache_filename = value;
-                    } else {
-                        options->copy_list_filename = value;
-                    }
+                    options->manifest_filename = value;
 
                     // Yes, goto, because we need to stop scanning here.
                     goto next_argument;
@@ -302,6 +286,14 @@ int main(int argc, char** argv) {
     enum zelda64_result result = zelda64_open_rom(options.in_filename, &in_rom);
     if (result != ZELDA64_OK) {
         return result_error(result, "could not open input ROM");
+    }
+
+    if (options.manifest_filename != NULL) {
+        logf_info("Creating manifest file: %s", options.manifest_filename);
+        result = zelda64_make_rom_manifest(options.manifest_filename, &in_rom);
+        if (result != ZELDA64_OK) {
+            return result_error(result, "failed to make ROM manifest");
+        }
     }
 
     // Create the destination ROM.

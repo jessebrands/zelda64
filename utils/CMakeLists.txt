@@ -3,6 +3,7 @@ find_package(yaz0 0.2 REQUIRED)
 add_executable(decompress
         decompress.c
         log.c
+        manifest.c
         rom.c)
 
 target_link_libraries(decompress
