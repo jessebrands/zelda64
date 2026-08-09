@@ -22,6 +22,7 @@ option(ZELDA64_BUILD_TESTS "Enable building tests" ${PROJECT_IS_TOP_LEVEL})
 
 set(ZELDA64_PUBLIC_HEADERS
         include/zelda64/zelda64.h
+        include/zelda64/zmf.h
         ${CMAKE_CURRENT_BINARY_DIR}/include/zelda64/config.h)
 
 set(ZELDA64_PRIVATE_HEADERS
@@ -33,7 +34,8 @@ set(ZELDA64_SOURCES
         src/crc32.c
         src/dma.c
         src/rom.c
-        src/zelda64.c)
+        src/zelda64.c
+        src/zmf.c)
 
 function(zelda64_enable_warnings target)
     if (MSVC)
