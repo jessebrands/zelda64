@@ -225,7 +225,7 @@ cleanup_file:
 }
 
 enum zelda64_result
-zelda64_create_rom(char const* filename, size_t const file_size,
+zelda64_create_rom(char const* filename,
                    struct zelda64_dmadata_info const* dma_info,
                    struct zelda64_rom* rom) {
     if (filename == NULL || dma_info == NULL || rom == NULL) {
@@ -238,24 +238,9 @@ zelda64_create_rom(char const* filename, size_t const file_size,
 
     rom->filename = filename;
     rom->file = fopen(rom->filename, "w+b");
-    rom->file_size = file_size;
+    rom->file_size = 0;
     if (rom->file == NULL) {
         return ZELDA64_IO_ERROR;
-    }
-
-    // Annoyingly, there's really no way for us to do this... =/
-    size_t bytes_out = 0;
-    while (bytes_out < rom->file_size) {
-        uint8_t const chunk[1024] = {0};
-        size_t const remaining = file_size - bytes_out;
-        size_t const have = remaining < sizeof chunk ? remaining : sizeof chunk;
-
-        if (fwrite(chunk, have, 1, rom->file) != 1) {
-            result = ZELDA64_IO_ERROR;
-            goto cleanup_file;
-        }
-
-        bytes_out += have;
     }
 
     // Allocate DMADATA for the ROM.
@@ -335,6 +320,11 @@ zelda64_copy_file(struct zelda64_rom* out_rom, uint32_t const offset,
         .rom_start = offset,
         .rom_end = 0x0,
     };
+
+    // If the file got bigger, update our file size.
+    if (out_rom->dma_table[file_index].vrom_end > out_rom->file_size) {
+        out_rom->file_size = out_rom->dma_table[file_index].vrom_end;
+    }
 
     return ZELDA64_OK;
 }
@@ -503,6 +493,11 @@ zelda64_decompress_file(struct zelda64_rom* out_rom,
         .rom_end = 0x0,
     };
 
+    // If the file got bigger, update our file size.
+    if (out_rom->dma_table[file_index].vrom_end > out_rom->file_size) {
+        out_rom->file_size = out_rom->dma_table[file_index].vrom_end;
+    }
+
     return ZELDA64_OK;
 }
 
@@ -634,15 +629,39 @@ enum zelda64_result zelda64_finalize_rom(struct zelda64_rom* rom) {
     return ZELDA64_OK;
 }
 
-enum zelda64_result
-zelda64_fill_ramp(struct zelda64_rom* rom, size_t const start, size_t const end) {
-    if (rom == NULL || start > end) {
-        return ZELDA64_INVALID_PARAMETER;
+static size_t
+round_up_pow2(size_t value) {
+    if (value == 0) {
+        return 1;
     }
 
+    value -= 1;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value |= value >> 32;
+    return value + 1;
+}
+
+static enum zelda64_result
+zelda64_fill(struct zelda64_rom* rom, size_t const start, size_t const end,
+             enum zelda64_fill_mode const mode) {
     uint8_t ramp[256];
     for (size_t i = 0; i < sizeof ramp; ++i) {
-        ramp[i] = (uint8_t) i;
+        switch (mode) {
+            case ZELDA64_FILL_ZERO:
+                ramp[i] = 0;
+                break;
+
+            case ZELDA64_FILL_RAMP:
+                ramp[i] = (uint8_t) i;
+                break;
+
+            default:
+                abort();
+        }
     }
 
     if (fseek(rom->file, (long) start, SEEK_SET) != 0) {
@@ -663,4 +682,11 @@ zelda64_fill_ramp(struct zelda64_rom* rom, size_t const start, size_t const end)
     }
 
     return ZELDA64_OK;
+}
+
+enum zelda64_result
+zelda64_pad_rom(struct zelda64_rom* rom, enum zelda64_fill_mode const fill) {
+    size_t const old_size = rom->file_size;
+    size_t const padded_size = round_up_pow2(rom->file_size);
+    return zelda64_fill(rom, old_size, padded_size, fill);
 }

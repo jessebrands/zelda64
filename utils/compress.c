@@ -34,11 +34,6 @@
 
 #define COMPRESS_PROGRAM_NAME "compress"
 
-enum fill_mode {
-    FILL_ZERO = 0,
-    FILL_RAMP,
-};
-
 enum option_result {
     OPTIONS_OK,
     OPTIONS_DONE,
@@ -50,8 +45,10 @@ struct compress_options {
     char const* out_filename;
     char const* cache_filename;
     char const* copy_list_filename;
+
     int compression_level;
-    enum fill_mode fill;
+    bool pad_output;
+    enum zelda64_fill_mode fill;
 };
 
 static void
@@ -204,6 +201,15 @@ parse_options(struct compress_options* options, int const argc, char** argv) {
                 continue;
             }
 
+            if (is_long_option(option, length, "pad")) {
+                if (value != NULL) {
+                    log_error("option '--pad' takes no argument");
+                    return usage_error();
+                }
+                options->pad_output = true;
+                continue;
+            }
+
             if (is_long_option(option, length, "fill")) {
                 char const* const mode = take_long_argument(value, argc, argv, &i);
                 if (mode == NULL) {
@@ -211,9 +217,9 @@ parse_options(struct compress_options* options, int const argc, char** argv) {
                     return usage_error();
                 }
                 if (strcmp(mode, "zero") == 0) {
-                    options->fill = FILL_ZERO;
+                    options->fill = ZELDA64_FILL_ZERO;
                 } else if (strcmp(mode, "ramp") == 0) {
-                    options->fill = FILL_RAMP;
+                    options->fill = ZELDA64_FILL_RAMP;
                 } else {
                     logf_error("invalid argument '%s' for '--fill'", mode);
                     return usage_error();
@@ -299,7 +305,7 @@ int main(int argc, char** argv) {
     }
 
     struct zelda64_rom out_rom;
-    result = zelda64_create_rom(options.out_filename, COMPRESSED_SIZE, &in_rom.dma_info, &out_rom);
+    result = zelda64_create_rom(options.out_filename, &in_rom.dma_info, &out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "could not open output ROM");
         goto cleanup_in_rom;
@@ -429,16 +435,18 @@ int main(int argc, char** argv) {
         }
     }
 
+    out_rom.file_size = rom_offset;
+
     result = zelda64_write_dmadata_to_rom(&out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "failed to write DMADATA");
         goto cleanup_out_rom;
     }
 
-    if (options.fill == FILL_RAMP) {
-        result = zelda64_fill_ramp(&out_rom, rom_offset, out_rom.file_size);
+    if (options.pad_output) {
+        result = zelda64_pad_rom(&out_rom, options.fill);
         if (result != ZELDA64_OK) {
-            exit_code = result_error(result, "failed to fill tail with byte ramp");
+            exit_code = result_error(result, "failed to pad ROM");
             goto cleanup_out_rom;
         }
     }

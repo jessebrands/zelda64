@@ -25,8 +25,10 @@
 
 #include <zelda64/zelda64.h>
 
-#define COMPRESSED_SIZE   0x2000000u
-#define DECOMPRESSED_SIZE 0x4000000u
+enum zelda64_fill_mode {
+    ZELDA64_FILL_ZERO = 0,
+    ZELDA64_FILL_RAMP,
+};
 
 struct zelda64_rom {
     char const* filename;
@@ -41,7 +43,7 @@ enum zelda64_result
 zelda64_open_rom(char const* filename, struct zelda64_rom* rom);
 
 enum zelda64_result
-zelda64_create_rom(char const* filename, size_t file_size,
+zelda64_create_rom(char const* filename,
                    struct zelda64_dmadata_info const* dma_info,
                    struct zelda64_rom* rom);
 
@@ -70,6 +72,6 @@ enum zelda64_result
 zelda64_finalize_rom(struct zelda64_rom* rom);
 
 enum zelda64_result
-zelda64_fill_ramp(struct zelda64_rom* rom, size_t start, size_t end);
+zelda64_pad_rom(struct zelda64_rom* rom, enum zelda64_fill_mode fill);
 
 #endif //ZELDA64_ROM_FILE_H

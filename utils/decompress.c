@@ -45,6 +45,9 @@ struct decompress_options {
     char const* out_filename;
     char const* cache_filename;
     char const* copy_list_filename;
+
+    bool pad_output;
+    enum zelda64_fill_mode fill;
 };
 
 static void
@@ -56,6 +59,8 @@ print_usage(FILE* stream) {
     fprintf(stream, "  -C, --cache FILE        write a new or update an existing compression cache\n");
     fprintf(stream, "  -L, --copy-list FILE    create a file with a list of indices that\n");
     fprintf(stream, "                            were copied instead of decompressed\n");
+    fprintf(stream, "      --fill mode         specify method for filling non-written bytes\n");
+    fprintf(stream, "      --pad               round the output ROM size up to a power of 2\n");
     fprintf(stream, "  -v, --verbose           print logging messages (repeat to increase\n");
     fprintf(stream, "                            verbosity)\n");
     fprintf(stream, "      --version           print version information\n");
@@ -195,6 +200,32 @@ parse_options(struct decompress_options* options, int const argc, char** argv) {
                 continue;
             }
 
+            if (is_long_option(option, length, "pad")) {
+                if (value != NULL) {
+                    log_error("option '--pad' takes no argument");
+                    return usage_error();
+                }
+                options->pad_output = true;
+                continue;
+            }
+
+            if (is_long_option(option, length, "fill")) {
+                char const* const mode = take_long_argument(value, argc, argv, &i);
+                if (mode == NULL) {
+                    log_error("option '--fill' requires an argument");
+                    return usage_error();
+                }
+                if (strcmp(mode, "zero") == 0) {
+                    options->fill = ZELDA64_FILL_ZERO;
+                } else if (strcmp(mode, "ramp") == 0) {
+                    options->fill = ZELDA64_FILL_RAMP;
+                } else {
+                    logf_error("invalid argument '%s' for '--fill'", mode);
+                    return usage_error();
+                }
+                continue;
+            }
+
             logf_error("unrecognized option '%s'", arg);
             return usage_error();
         }
@@ -275,7 +306,7 @@ int main(int argc, char** argv) {
 
     // Create the destination ROM.
     struct zelda64_rom out_rom;
-    result = zelda64_create_rom(options.out_filename, DECOMPRESSED_SIZE, &in_rom.dma_info, &out_rom);
+    result = zelda64_create_rom(options.out_filename, &in_rom.dma_info, &out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "could not open output ROM");
         goto cleanup_in_rom;
@@ -330,6 +361,14 @@ int main(int argc, char** argv) {
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "failed to write DMADATA");
         goto cleanup_out_rom;
+    }
+
+    if (options.pad_output) {
+        result = zelda64_pad_rom(&out_rom, options.fill);
+        if (result != ZELDA64_OK) {
+            exit_code = result_error(result, "failed to pad ROM");
+            goto cleanup_out_rom;
+        }
     }
 
     // Recalculate the check code and write out the header.
