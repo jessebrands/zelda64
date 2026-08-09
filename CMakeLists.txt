@@ -47,6 +47,10 @@ function(zelda64_enable_warnings target)
                 PRIVATE /w14296    # unsigned compares
                 PRIVATE /w14311    # pointer truncation
                 PRIVATE /w14826)   # sign-extended conversion
+
+        # Suppress 'warnings' that we're not using MSVC's annoying extensions
+        target_compile_definitions(${target}
+                PRIVATE _CRT_SECURE_NO_WARNINGS)
     else ()
         target_compile_options(${target}
                 PRIVATE -Wall -Wextra -pedantic
