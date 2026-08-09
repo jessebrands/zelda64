@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <yaz0/yaz0.h>
 
 #include <zelda64/zelda64.h>
 
@@ -281,7 +282,7 @@ int main(int argc, char** argv) {
     }
 
     // Time to get to work.
-    log_info("Decompressing ROM");
+    logf_info("Decompressing ROM with libyaz0 %s", yaz0_version_string());
     clock_t const start = clock();
 
     for (size_t i = 0; i < in_rom.dma_info.count; ++i) {

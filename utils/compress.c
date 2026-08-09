@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <yaz0/yaz0.h>
 
 #include <zelda64/zelda64.h>
 
@@ -345,7 +346,7 @@ int main(int argc, char** argv) {
     ops[1002] = 1;
     ops[1004] = 1;
 
-    log_info("Compressing ROM");
+    logf_info("Compressing ROM with libyaz0 %s", yaz0_version_string());
     clock_t const start = clock();
 
     uint32_t rom_offset = 0;
