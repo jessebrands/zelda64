@@ -34,6 +34,11 @@
 
 #define COMPRESS_PROGRAM_NAME "compress"
 
+enum fill_mode {
+    FILL_ZERO = 0,
+    FILL_RAMP,
+};
+
 enum option_result {
     OPTIONS_OK,
     OPTIONS_DONE,
@@ -46,18 +51,20 @@ struct compress_options {
     char const* cache_filename;
     char const* copy_list_filename;
     int compression_level;
+    enum fill_mode fill;
 };
 
 static void
 print_usage(FILE* stream) {
-    fprintf(stream, "Usage: decompress [--cache FILE] [--copy-list FILE] rom outfile\n");
+    fprintf(stream, "Usage: compress [--cache FILE] [--copy-list FILE] rom outfile\n");
     fprintf(stream, "Compress a Nintendo 64 Zelda ROM.\n");
     fprintf(stream, "\n");
     fprintf(stream, "Options:\n");
     fprintf(stream, "  -l, --level N           compression level (default: 9)\n");
     fprintf(stream, "  -C, --cache FILE        write a new or update an existing compression cache\n");
-    fprintf(stream, "  -L, --copy-list FILE    create a file with a list of indices that\n");
-    fprintf(stream, "                            were copied instead of decompressed\n");
+    fprintf(stream, "  -L, --copy-list FILE    file with indices that should be copied\n");
+    fprintf(stream, "      --fill mode         specify method for filling non-written bytes\n");
+    fprintf(stream, "      --pad               round the output ROM size up to a power of 2\n");
     fprintf(stream, "  -v, --verbose           print logging messages (repeat to increase\n");
     fprintf(stream, "                            verbosity)\n");
     fprintf(stream, "      --version           print version information\n");
@@ -192,6 +199,23 @@ parse_options(struct compress_options* options, int const argc, char** argv) {
                 options->copy_list_filename = take_long_argument(value, argc, argv, &i);
                 if (options->copy_list_filename == NULL) {
                     log_error("option '--copy-list' requires an argument");
+                    return usage_error();
+                }
+                continue;
+            }
+
+            if (is_long_option(option, length, "fill")) {
+                char const* const mode = take_long_argument(value, argc, argv, &i);
+                if (mode == NULL) {
+                    log_error("option '--fill' requires an argument");
+                    return usage_error();
+                }
+                if (strcmp(mode, "zero") == 0) {
+                    options->fill = FILL_ZERO;
+                } else if (strcmp(mode, "ramp") == 0) {
+                    options->fill = FILL_RAMP;
+                } else {
+                    logf_error("invalid argument '%s' for '--fill'", mode);
                     return usage_error();
                 }
                 continue;
@@ -409,6 +433,14 @@ int main(int argc, char** argv) {
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "failed to write DMADATA");
         goto cleanup_out_rom;
+    }
+
+    if (options.fill == FILL_RAMP) {
+        result = zelda64_fill_ramp(&out_rom, rom_offset, out_rom.file_size);
+        if (result != ZELDA64_OK) {
+            exit_code = result_error(result, "failed to fill tail with byte ramp");
+            goto cleanup_out_rom;
+        }
     }
 
     // Recalculate the check code and write out the header.

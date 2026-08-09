@@ -69,4 +69,7 @@ zelda64_write_dmadata_to_rom(struct zelda64_rom* rom);
 enum zelda64_result
 zelda64_finalize_rom(struct zelda64_rom* rom);
 
+enum zelda64_result
+zelda64_fill_ramp(struct zelda64_rom* rom, size_t start, size_t end);
+
 #endif //ZELDA64_ROM_FILE_H

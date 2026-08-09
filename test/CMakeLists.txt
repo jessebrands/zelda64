@@ -32,7 +32,7 @@ function(zelda64_add_compress_test input_rom check_rom)
             FIXTURES_SETUP "compressed_rom_${base_name}")
 
     add_test(NAME "Compress.${base_name}"
-            COMMAND compress -vv "${input_rom}" "${out_rom}")
+            COMMAND compress -vv --fill ramp "${input_rom}" "${out_rom}")
     set_tests_properties("Compress.${base_name}" PROPERTIES
             FIXTURES_SETUP "compressed_rom_${base_name}"
             DEPENDS "Compress.${base_name}.Clean"

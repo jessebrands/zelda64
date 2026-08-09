@@ -633,3 +633,34 @@ enum zelda64_result zelda64_finalize_rom(struct zelda64_rom* rom) {
 
     return ZELDA64_OK;
 }
+
+enum zelda64_result
+zelda64_fill_ramp(struct zelda64_rom* rom, size_t const start, size_t const end) {
+    if (rom == NULL || start > end) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+
+    uint8_t ramp[256];
+    for (size_t i = 0; i < sizeof ramp; ++i) {
+        ramp[i] = (uint8_t) i;
+    }
+
+    if (fseek(rom->file, (long) start, SEEK_SET) != 0) {
+        return ZELDA64_IO_ERROR;
+    }
+
+    for (size_t offset = start; offset < end;) {
+        size_t const phase = offset & 0xFF;
+        size_t const room = sizeof ramp - phase;
+        size_t const remaining = end - offset;
+        size_t const want = remaining < room ? remaining : room;
+
+        if (fwrite(&ramp[phase], 1, want, rom->file) != want) {
+            return ZELDA64_IO_ERROR;
+        }
+
+        offset += (uint32_t) want;
+    }
+
+    return ZELDA64_OK;
+}
