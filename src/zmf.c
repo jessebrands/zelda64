@@ -34,6 +34,11 @@
 #define ZMF_OFFSET_CHECK_CODE   0x18
 #define ZMF_OFFSET_PROGRAM      0x20
 
+#define ZMF_CHUNK_OFFSET_TYPE     0x00
+#define ZMF_CHUNK_OFFSET_LENGTH   0x04
+#define ZMF_CHUNK_OFFSET_CRC32    0x08
+#define ZMF_CHUNK_OFFSET_RESERVED 0x0C
+
 static char const zmf_magic[4] = {'Z', '6', '4', 'M'};
 
 enum zelda64_result
@@ -82,6 +87,42 @@ zelda64_zmf_write_header(uint8_t* data, size_t const size,
     zelda64_write_u32(&data[ZMF_OFFSET_CHECK_CODE], (uint32_t) (header->check_code >> 32));
     zelda64_write_u32(&data[ZMF_OFFSET_CHECK_CODE + 0x04], (uint32_t) (header->check_code));
     memcpy(&data[ZMF_OFFSET_PROGRAM], header->program, sizeof header->program);
+
+    return ZELDA64_OK;
+}
+
+enum zelda64_result
+zelda64_zmf_read_chunk_header(struct zelda64_zmf_chunk_header* chunk,
+                              uint8_t const* data, size_t size) {
+    if (chunk == NULL || data == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+    if (size < ZELDA64_ZMF_CHUNK_HEADER_SIZE) {
+        return ZELDA64_OUT_OF_RANGE;
+    }
+
+    memcpy(chunk->type, &data[ZMF_CHUNK_OFFSET_TYPE], sizeof chunk->type);
+    chunk->length = zelda64_read_u32(&data[ZMF_CHUNK_OFFSET_LENGTH]);
+    chunk->checksum = zelda64_read_u32(&data[ZMF_CHUNK_OFFSET_CRC32]);
+    memcpy(chunk->reserved, &data[ZMF_CHUNK_OFFSET_RESERVED], sizeof chunk->reserved);
+
+    return ZELDA64_OK;
+}
+
+enum zelda64_result
+zelda64_zmf_write_chunk_header(uint8_t* data, size_t size,
+                               struct zelda64_zmf_chunk_header const* chunk) {
+    if (chunk == NULL || data == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+    if (size < ZELDA64_ZMF_CHUNK_HEADER_SIZE) {
+        return ZELDA64_OUT_OF_RANGE;
+    }
+
+    memcpy(&data[ZMF_CHUNK_OFFSET_TYPE], chunk->type, sizeof chunk->type);
+    zelda64_write_u32(&data[ZMF_CHUNK_OFFSET_LENGTH], chunk->length);
+    zelda64_write_u32(&data[ZMF_CHUNK_OFFSET_CRC32], chunk->checksum);
+    memcpy(&data[ZMF_CHUNK_OFFSET_RESERVED], chunk->reserved, sizeof chunk->reserved);
 
     return ZELDA64_OK;
 }

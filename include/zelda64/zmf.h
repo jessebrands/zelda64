@@ -33,7 +33,8 @@
 
 #define ZELDA64_ZMF_VERSION ZELDA64_ZMF_MAKE_VERSION(1, 0)
 
-#define ZELDA64_ZMF_HEADER_SIZE 0x40u
+#define ZELDA64_ZMF_HEADER_SIZE       0x40u
+#define ZELDA64_ZMF_CHUNK_HEADER_SIZE 0x10u
 
 struct zelda64_zmf_header {
     uint32_t version;
@@ -43,6 +44,13 @@ struct zelda64_zmf_header {
     uint8_t reserved1[3];
     uint64_t check_code;
     char program[32];
+};
+
+struct zelda64_zmf_chunk_header {
+    char type[4];
+    uint32_t length;
+    uint32_t checksum;
+    uint8_t reserved[4];
 };
 
 /*!
@@ -66,5 +74,27 @@ zelda64_zmf_read_header(struct zelda64_zmf_header* header,
 ZELDA64_API enum zelda64_result
 zelda64_zmf_write_header(uint8_t* data, size_t size,
                          struct zelda64_zmf_header const* header);
+
+/*!
+ * \brief Decodes a buffer into a ZMF chunk header.
+ * \param chunk Pointer to a \ref zelda64_zmf_chunk_header to receive the decoded data.
+ * \param data Buffer holding the data.
+ * \param size Size of the buffer in bytes.
+ * \return ZELDA64_OK on success.
+ */
+ZELDA64_API enum zelda64_result
+zelda64_zmf_read_chunk_header(struct zelda64_zmf_chunk_header* chunk,
+                              uint8_t const* data, size_t size);
+
+/*!
+ * \brief Encodes a ZMF chunk header into a buffer.
+ * \param data Buffer where the header will be written to.
+ * \param size Size of the buffer in bytes.
+ * \param chunk Pointer to a \ref zelda64_zmf_chunk_header.
+ * \return ZELDA64_OK on success.
+ */
+ZELDA64_API enum zelda64_result
+zelda64_zmf_write_chunk_header(uint8_t* data, size_t size,
+                               struct zelda64_zmf_chunk_header const* chunk);
 
 #endif //LIBZELDA64_ZMF_H
