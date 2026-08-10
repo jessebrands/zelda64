@@ -23,6 +23,28 @@ License
     Lesser General Public License or, at your option, any later version. See
     the files COPYING and COPYING.LESSER for the full text of this license.
 
+Usage
+
+    libzelda64 ships with a small suite of utilities, collectively called
+    `libzelda64-utils`, which can be found under the `utils/` folder. They can
+    be used to compress and decompress Nintendo 64 Zelda ROMs.
+
+    To decompress a Nintendo 64 Zelda ROM:
+
+        utils/decompress -M manifest.zmf compressed.z64 decompressed.z64
+
+    The `-M` option creates a manifest of the ROM which is needed to recreate
+    the same ROM with the compressor as decompression is destructive. To
+    compress a decompressed ROM call:
+
+        utils/compress -M manifest.zmf decompressed.z64 compressed.z64
+
+    To make a compressed ROM in the same way Nintendo does, call:
+
+        utils/compress --pad --fill ramp -M manifest.zmf in.z64 out.z64
+
+    For more options, see `--help`.
+
 Compiling
 
     Download the latest source tarball, and then:
