@@ -324,7 +324,10 @@ int main(int argc, char** argv) {
         goto cleanup_manifest;
     }
 
-    logf_info("Compressing ROM with libyaz0 %s", yaz0_version_string());
+    logf_info("Compressing ROM with libyaz0 %s (%s)",
+        yaz0_version_string(),
+        yaz0_search_name(yaz0_default_search()));
+
     clock_t const start = clock();
 
     uint32_t rom_offset = 0;
