@@ -15,7 +15,7 @@ Origin
 
 License
 
-    The zelda64 program's code and documentation are covered by version 3 of
+    The libzelda64-utils's code and documentation are covered by version 3 of
     the GNU General Public License or, at your option, any later version. See
     the file COPYING for the full text of this license.
 
@@ -56,4 +56,4 @@ Compiling
         cmake --build /path/to/build-dir
 
     You will need CMake 3.21 or later, a C compiler that supports the C99
-    standard, and libyaz0 version 0.1.
+    standard, and libyaz0 version 0.2.
