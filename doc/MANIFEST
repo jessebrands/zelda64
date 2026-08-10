@@ -110,6 +110,51 @@ File Operations Chunk [ZMOP]
     The length of the array is the chunk length. The length of the array must
     equal the DMA entry count or be rejected.
 
+Copy List Chunk [ZMCL]
+
+    The ZMCL chunk is a compatibility chunk, it must only ever be used if a
+    ZMOP chunk is not present. If both are present, the ZMOP chunk takes
+    preference.
+
+    The ZMCL chunk contains an array of bytes whose bits represent files
+    ordered from most to least significant bit. In the illustration below, the
+    most significant bit would be the first entry in the DMADATA, the most
+    significant bit of the second byte is the 9th entry in the DMADATA.
+
+            byte 0                    byte 1
+        +-------------------------+-------------------------+
+        |  0  1  2  3  4  5  6  7 |  8  9 10 11 12 13 14 15 |
+        +-------------------------+-------------------------+
+           ^ 0x80
+
+    The length of the chunk can be calculated from the count of DMA entries
+    in the DMADATA. Bits beyond entry count must be ignored, their values are
+    undefined. If the ZMCL length is too long or too short, the implementation
+    must reject it.
+
+        length = (count + 7) / 8      191 bytes for OoT, 196 for MM
+
+    To get the bit for the DMADATA entry `i`, the following C code can be used:
+
+        chunk.data[i / 8] & (0x80 >> (i % 8))
+
+    To decide what to do for DMA entry `i`, the implementation must run the
+    following checks:
+
+        vrom_start == vrom_end  ->  data is not written, copy entry verbatim
+         rom_end == UINT32_MAX  ->  data is not written, copy entry verbatim
+            bit for `i` is set  ->  copy the file's data verbatim
+                     otherwise  ->  compress the file
+
+    As a manner of example, here are the first 32 entries for Ocarina of Time
+    1.0 (US) encoded as a ZMCL array:
+
+              FF       C1       FF       E0
+        11111111 11000001 11111111 11100000
+
+    In other words: copy 0-9, then derive 10-14, then copy 15-26, and derive
+    27-31.
+
 Ocarina of Time Randomizer Patch File Chunk [RAPF]
 
     This is an example chunk for how the format could be extended.
