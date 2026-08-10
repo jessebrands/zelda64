@@ -216,19 +216,6 @@ enum zelda64_dma_kind zelda64_dma_entry_kind(struct zelda64_dma_entry const* ent
     return ZELDA64_DMA_COMPRESSED;
 }
 
-enum zelda64_op zelda64_dma_kind_to_op(enum zelda64_dma_kind const kind) {
-    switch (kind) {
-        case ZELDA64_DMA_DELETED:
-            return ZELDA64_OP_DELETE;
-        case ZELDA64_DMA_UNCOMPRESSED:
-            return ZELDA64_OP_COPY;
-        case ZELDA64_DMA_COMPRESSED:
-            return ZELDA64_OP_COMPRESS;
-        default:
-            return ZELDA64_OP_SKIP;
-    }
-}
-
 enum zelda64_result
 zelda64_dma_entry_extent(struct zelda64_dma_entry const* entry,
                          uint32_t* offset, uint32_t* size) {

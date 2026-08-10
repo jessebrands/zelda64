@@ -33,6 +33,7 @@ char const* zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_BAD_MANIFEST: return "bad manifest file";
         case ZELDA64_UNSUPPORTED_VERSION: return "unsupported version";
         case ZELDA64_NOT_FOUND: return "not found";
+        case ZELDA64_MISMATCH: return "values do not match";
     }
     return "unknown";
 }

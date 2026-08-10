@@ -21,13 +21,45 @@
 #ifndef LIBZELDA64_MANIFEST_H
 #define LIBZELDA64_MANIFEST_H
 
+#include <zelda64/zmf.h>
+
 #include "rom.h"
+
+enum zelda64_operation {
+    ZELDA64_OPERATION_PASS,
+    ZELDA64_OPERATION_COPY,
+    ZELDA64_OPERATION_COMPRESS,
+};
+
+struct zelda64_manifest {
+    char const* filename;
+    FILE* file;
+    size_t file_size;
+    struct zelda64_zmf_header header;
+
+    uint8_t* copy_list;
+    size_t copy_list_size;
+};
+
+enum zelda64_result
+zelda64_open_manifest(char const* filename, struct zelda64_manifest* manifest);
+
+void
+zelda64_close_manifest(struct zelda64_manifest* manifest);
 
 enum zelda64_result
 zelda64_make_rom_manifest(char const* filename, struct zelda64_rom const* rom);
 
 enum zelda64_result
-zelda64_read_rom_op_list(char const* filename, struct zelda64_rom const* rom,
-                         uint8_t* ops, size_t count);
+zelda64_manifest_check_input_rom(struct zelda64_manifest const* manifest,
+                           struct zelda64_rom const* rom);
+
+enum zelda64_result
+zelda64_manifest_check_output_rom(struct zelda64_manifest const* manifest,
+                                  struct zelda64_rom const* rom);
+
+enum zelda64_operation
+zelda64_manifest_operation(struct zelda64_manifest const* manifest,
+                           struct zelda64_dma_entry const* entry, size_t index);
 
 #endif //LIBZELDA64_MANIFEST_H

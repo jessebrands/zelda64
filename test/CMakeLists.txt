@@ -16,7 +16,7 @@ function(zelda64_add_test input_rom)
     # Decompress the input ROM.
     #
     add_test(NAME "${base_name}.Decompress"
-            COMMAND decompress --pad --fill ramp
+            COMMAND decompress -v --pad --fill ramp
             --manifest "${manifest}"
             "${input_rom}" "${decompressed_rom}")
     set_tests_properties("${base_name}.Decompress" PROPERTIES
@@ -28,7 +28,7 @@ function(zelda64_add_test input_rom)
     # And compress it again.
     #
     add_test(NAME "${base_name}.Compress"
-            COMMAND compress --pad --fill ramp
+            COMMAND compress -v --pad --fill ramp
             --manifest "${manifest}"
             "${decompressed_rom}" "${compressed_rom}")
     set_tests_properties("${base_name}.Compress" PROPERTIES

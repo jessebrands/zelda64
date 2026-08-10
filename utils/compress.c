@@ -294,24 +294,34 @@ int main(int argc, char** argv) {
         return result_error(result, "could not open input ROM");
     }
 
-    // This should not be hard coded, but for now...
-    uint8_t* ops = calloc(in_rom.dma_info.count, sizeof(*ops));
-    if (ops == NULL) {
-        exit_code = result_error(ZELDA64_MEMORY_ERROR, "could not allocate copy list");
-        goto cleanup_in_rom;
-    }
-
-    result = zelda64_read_rom_op_list(options.manifest_filename, &in_rom, ops, in_rom.dma_info.count);
+    // Open the manifest and confirm that it matches the input ROM.
+    struct zelda64_manifest manifest = {0};
+    result = zelda64_open_manifest(options.manifest_filename, &manifest);
     if (result != ZELDA64_OK) {
-        exit_code = result_error(result, "could not get operations list");
+        exit_code = result_error(result, "failed to open manifest");
         goto cleanup_in_rom;
     }
 
+    logf_info("Opened manifest '%s' (created by %.32s)", manifest.filename, manifest.header.program);
+
+    if (manifest.copy_list == NULL) {
+        log_error("manifest contains no copy list");
+        exit_code = EXIT_FAILURE;
+        goto cleanup_manifest;
+    }
+
+    result = zelda64_manifest_check_input_rom(&manifest, &in_rom);
+    if (result != ZELDA64_OK) {
+        exit_code = result_error(result, "manifest does not match the input ROM");
+        goto cleanup_manifest;
+    }
+
+    // We're all good at this point, so let's bring in the output ROM.
     struct zelda64_rom out_rom;
     result = zelda64_create_rom(options.out_filename, &in_rom.dma_info, &out_rom);
     if (result != ZELDA64_OK) {
         exit_code = result_error(result, "could not open output ROM");
-        goto cleanup_in_rom;
+        goto cleanup_manifest;
     }
 
     logf_info("Compressing ROM with libyaz0 %s", yaz0_version_string());
@@ -321,29 +331,24 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < in_rom.dma_info.count; ++i) {
         struct zelda64_dma_entry const in_entry = in_rom.dma_table[i];
 
-        switch (ops[i]) {
-            case ZELDA64_OP_COPY:
-                logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
-                result = zelda64_copy_file(&out_rom, rom_offset, &in_rom, i);
-                break;
-
-            case ZELDA64_OP_COMPRESS:
-                logf_progress("[%4zu/%4zu] Compressing file", i + 1, in_rom.dma_info.count);
-                result = zelda64_compress_file(&out_rom, rom_offset, &in_rom, i);
-                break;
-
-            case ZELDA64_OP_SKIP:
+        switch (zelda64_manifest_operation(&manifest, &in_entry, i)) {
+            case ZELDA64_OPERATION_PASS:
                 logf_progress("[%4zu/%4zu] Skipping file", i + 1, in_rom.dma_info.count);
                 out_rom.dma_table[i] = in_entry;
                 break;
 
-            case ZELDA64_OP_DELETE:
-                logf_progress("[%4zu/%4zu] Deleting file", i + 1, in_rom.dma_info.count);
-                out_rom.dma_table[i] = in_entry;
+            case ZELDA64_OPERATION_COPY:
+                logf_progress("[%4zu/%4zu] Copying file", i + 1, in_rom.dma_info.count);
+                result = zelda64_copy_file(&out_rom, rom_offset, &in_rom, i);
+                break;
+
+            case ZELDA64_OPERATION_COMPRESS:
+                logf_progress("[%4zu/%4zu] Compressing file", i + 1, in_rom.dma_info.count);
+                result = zelda64_compress_file(&out_rom, rom_offset, &in_rom, i);
                 break;
 
             default:
-                abort();  /* validate_ops already rejected these */
+                abort();
         }
 
         if (result != ZELDA64_OK) {
@@ -391,8 +396,17 @@ int main(int argc, char** argv) {
     logf_info("Compression finished in %.2f seconds", elapsed);
     logf_info("Compressed ROM check code is %016"PRIX64, out_rom.info.header.check_code);
 
+    // Ensure that the output ROM matches the manifest.
+    result = zelda64_manifest_check_output_rom(&manifest, &out_rom);
+    if (result != ZELDA64_OK) {
+        exit_code = result_error(result, "output ROM verification failed");
+        goto cleanup_out_rom;
+    }
+
 cleanup_out_rom:
     zelda64_close_rom(&out_rom);
+cleanup_manifest:
+    zelda64_close_manifest(&manifest);
 cleanup_in_rom:
     zelda64_close_rom(&in_rom);
     return exit_code;

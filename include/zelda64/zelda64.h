@@ -58,6 +58,7 @@ enum zelda64_result {
     ZELDA64_BAD_MANIFEST = -7,
     ZELDA64_UNSUPPORTED_VERSION = -8,
     ZELDA64_NOT_FOUND = -9,
+    ZELDA64_MISMATCH = -10,
     ZELDA64_IO_ERROR = -100,
 };
 
@@ -81,13 +82,6 @@ enum zelda64_dma_kind {
     ZELDA64_DMA_DELETED,
     ZELDA64_DMA_UNCOMPRESSED,
     ZELDA64_DMA_COMPRESSED,
-};
-
-enum zelda64_op {
-    ZELDA64_OP_SKIP = 0,
-    ZELDA64_OP_COPY = 1,
-    ZELDA64_OP_COMPRESS = 2,
-    ZELDA64_OP_DELETE = 3,
 };
 
 struct zelda64_rom_header {
@@ -262,9 +256,6 @@ zelda64_write_dmadata(uint8_t* data, size_t size,
 
 ZELDA64_API enum zelda64_dma_kind
 zelda64_dma_entry_kind(struct zelda64_dma_entry const* entry);
-
-ZELDA64_API enum zelda64_op
-zelda64_dma_kind_to_op(enum zelda64_dma_kind kind);
 
 ZELDA64_API enum zelda64_result
 zelda64_dma_entry_extent(struct zelda64_dma_entry const* entry,
