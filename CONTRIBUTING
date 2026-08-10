@@ -1,0 +1,9 @@
+
+                   libzelda64 -- notes for contributors
+
+Licensing of Contributions
+
+    Submissions are accepted under the GNU Lesser General Public License
+    version 3 or later for the library, and the GNU General Public License
+    version 3 or later for the utilities. New files should include the
+    standard header that is present in every file.
