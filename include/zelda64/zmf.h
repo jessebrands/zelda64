@@ -21,6 +21,7 @@
 #ifndef LIBZELDA64_ZMF_H
 #define LIBZELDA64_ZMF_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -36,7 +37,7 @@
 #define ZELDA64_ZMF_HEADER_SIZE       0x40u
 #define ZELDA64_ZMF_CHUNK_HEADER_SIZE 0x10u
 
-#define ZELDA64_ZMF_TYPE_OPS "ZMOP"
+#define ZELDA64_ZMF_TYPE_COPY_LIST "ZMCL"
 
 struct zelda64_zmf_header {
     uint32_t version;
@@ -123,5 +124,34 @@ ZELDA64_API enum zelda64_result
 zelda64_zmf_chunk_extent(struct zelda64_zmf_chunk_header const* chunk,
                          size_t offset, size_t total_size,
                          size_t* payload_offset, size_t* next_offset);
+
+/*!
+ * \brief Calculates the size of a copy list covering a number of DMA entries.
+ * \param count Number of entries in the DMADATA.
+ * \return Size of the copy list in bytes.
+ */
+ZELDA64_API size_t
+zelda64_zmf_copy_list_size(size_t count);
+
+/*!
+ * \brief Tests whether a DMA entry is marked to be copied.
+ * \param data Buffer with the copy list.
+ * \param size Size of the copy list in bytes.
+ * \param index Index of the DMA entry.
+ * \return true when the entry is marked, false when it is not or when index
+ *         lies outside the list.
+ */
+ZELDA64_API bool
+zelda64_zmf_copy_list_test(uint8_t const* data, size_t size, size_t index);
+
+/*!
+ * \brief Marks a DMA entry to be copied.
+ * \param data Buffer with the copy list.
+ * \param size Size of the copy list in bytes.
+ * \param index Index of the DMA entry.
+ * \return ZELDA64_OK on success.
+ */
+ZELDA64_API enum zelda64_result
+zelda64_zmf_copy_list_set(uint8_t* data, size_t size, size_t index);
 
 #endif //LIBZELDA64_ZMF_H

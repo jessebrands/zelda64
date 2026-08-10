@@ -164,3 +164,30 @@ zelda64_zmf_chunk_extent(struct zelda64_zmf_chunk_header const* chunk,
 
     return ZELDA64_OK;
 }
+
+size_t
+zelda64_zmf_copy_list_size(size_t const count) {
+    return (count + 7) / 8;
+}
+
+bool
+zelda64_zmf_copy_list_test(uint8_t const* data, size_t const size, size_t const index) {
+    if (data == NULL || index / 8u >= size) {
+        return false;
+    }
+
+    return (data[index / 8u] & (0x80u >> (index % 8u))) != 0u;
+}
+
+enum zelda64_result
+zelda64_zmf_copy_list_set(uint8_t* data, size_t const size, size_t const index) {
+    if (data == NULL) {
+        return ZELDA64_INVALID_PARAMETER;
+    }
+    if (index / 8u >= size) {
+        return ZELDA64_OUT_OF_RANGE;
+    }
+
+    data[index / 8u] |= (uint8_t) (0x80u >> (index % 8u));
+    return ZELDA64_OK;
+}
