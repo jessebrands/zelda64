@@ -34,6 +34,6 @@ Version 0.1 -- 2026-08-10
   Known Limitation
 
     * While decompression is fast (usually around 100 milliseconds),
-      compression is currently rather slow as `libzelda64-utils` as caching
-      was delayed to version 0.2.
+      compression is currently rather slow, as `libzelda64-utils` delayed
+      caching to version 0.2.
     * ABI or API stability is not yet guaranteed.
