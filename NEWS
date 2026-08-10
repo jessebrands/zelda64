@@ -1,0 +1,39 @@
+Version 0.1 -- 2026-08-10
+
+    First public release.
+
+  Features
+
+    * Many functions to deal with the reading of Nintendo 64 Zelda ROMs:
+      detection of DMADATA in ROMs, reading out MAKEROM headers, reading and
+      modifying DMADATA.
+    * Recalculation of Nintendo 64 ROM check codes across all CIC-NUS chips:
+      the 6101, 6102, 6103, 6105, 6106 and their equivalents.
+    * Writing of ROM headers and DMADATA.
+    * Utility functions for getting information about entries in the DMADATA.
+    * Introduction of the zelda64 manifest file format.
+
+  Utilities
+
+    * Two tools ship as part of this release, `compress` and `decompress`,
+      which can be found in the utils folder.
+    * A fast decompressor that can create a manifest file to turn the
+      decompressed ROM back into the compressed ROM.
+    * A highly compatible compressor that can create compressed ROMs that are
+      byte exact with Nintendo's own tooling.
+    * Uses libyaz0 version 0.2 for decompression and compression of ROM files.
+
+  Correctness
+
+    * Special care was taken to make sure that the library and utilities are
+      highly compatible with existing tools.
+    * Library and tools were tested against official, retail ROMs of Ocarina
+      of Time and Majora's Mask for correctness, matching Nintendo's output
+      exactly.
+
+  Known Limitation
+
+    * While decompression is fast (usually around 100 milliseconds),
+      compression  is currently rather slow as `libzelda64-utils` as caching
+      was delayed to version 0.2.
+    * ABI or API stability is not yet guaranteed.
