@@ -94,27 +94,11 @@ Check Code Chunk [ZMCC]
     Implementations should reject ROMs that have a mismatching check code. If
     the check code matches a compressed ROM, it must be decompressed first.
 
-File Operations Chunk [ZMOP]
-
-    The ZMOP chunk describes the operations that must be carried out by the
-    compressor to produce the compressed ROM. It is encoded as an array of
-    bytes whose indices correspond to their indices in the DMADATA.
-
-    Each byte can be one of the following values:
-
-        00  Skip the index and record an empty file
-        01  Copy from the uncompressed ROM to the compressed ROM
-        02  Compress the file from the uncompressed ROM
-        03  Marks the file as deleted
-
-    The length of the array is the chunk length. The length of the array must
-    equal the DMA entry count or be rejected.
-
 Copy List Chunk [ZMCL]
 
-    The ZMCL chunk is a compatibility chunk, it must only ever be used if a
-    ZMOP chunk is not present. If both are present, the ZMOP chunk takes
-    preference.
+    The ZMCL chunk carries a list of entries which should be copied rather
+    than compressed. It must always be produced by decompressors so that the
+    decompressed ROM can be compressed again into its original form.
 
     The ZMCL chunk contains an array of bytes whose bits represent files
     ordered from most to least significant bit. In the illustration below, the
@@ -161,20 +145,6 @@ Ocarina of Time Randomizer Patch File Chunk [RAPF]
 
     This chunk stores a ZPF (Zelda Patch File, see reference below) that must
     be applied to the decompressed ROM before it is compressed.
-
-Example
-
-    Included is a small dump of the first 144 bytes of a ZMF file.
-
-        5A 36 34 4D 00 01 00 00 00 00 00 00 00 00 00 00   Z64M............
-        43 5A 4C 45 00 00 00 00 EC 70 11 B7 76 16 D7 2B   CZLE....ìp.·v.×+
-        6C 69 62 7A 65 6C 64 61 36 34 20 30 2E 31 20 28   libzelda64 0.1 (
-        6C 69 62 79 61 7A 30 20 30 2E 32 29 00 00 00 00   libyaz0 0.2)....
-        5A 4D 43 43 00 00 00 10 00 00 00 00 00 00 00 00   ZMCC............
-        EC 70 11 B7 76 16 D7 2B 93 52 2E 7B E5 06 D4 27   ìp.·v.×+“R.{å.Ô'
-        5A 4D 4F 50 00 00 05 F6 00 00 00 00 00 00 00 00   ZMOP...ö........
-        01 01 01 01 01 01 01 01 01 01 02 02 02 02 02 01   ................
-        01 01 01 01 01 01 01 01 01 01 01 02 02 02 02 02   ................
 
 Conclusion
 
