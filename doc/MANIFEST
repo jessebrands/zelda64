@@ -139,13 +139,6 @@ Copy List Chunk [ZMCL]
     In other words: copy 0-9, then derive 10-14, then copy 15-26, and derive
     27-31.
 
-Ocarina of Time Randomizer Patch File Chunk [RAPF]
-
-    This is an example chunk for how the format could be extended.
-
-    This chunk stores a ZPF (Zelda Patch File, see reference below) that must
-    be applied to the decompressed ROM before it is compressed.
-
 Conclusion
 
     I hope that the ZMF file format can be useful to the community and that
