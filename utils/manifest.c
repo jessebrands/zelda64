@@ -20,6 +20,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <zelda64/zmf.h>
@@ -60,56 +61,54 @@ create_manifest_file(char const* filename, struct zelda64_rom const* rom) {
 }
 
 static enum zelda64_result
-zelda64_manifest_append_op_list(char const* filename, struct zelda64_rom const* rom) {
+zelda64_manifest_append_copy_list(char const* filename, struct zelda64_rom const* rom) {
     enum zelda64_result result = ZELDA64_OK;
+
+    size_t const list_size = zelda64_zmf_copy_list_size(rom->dma_info.count);
+    size_t const padded = (list_size + 15u) & (size_t) -16;
+
+    uint8_t* list = calloc(padded, 1);
+    if (list == NULL) {
+        return ZELDA64_MEMORY_ERROR;
+    }
+
+    for (size_t i = 0; i < rom->dma_info.count; ++i) {
+        if (zelda64_dma_entry_kind(&rom->dma_table[i]) == ZELDA64_DMA_UNCOMPRESSED) {
+            zelda64_zmf_copy_list_set(list, list_size, i);
+        }
+    }
 
     FILE* file = fopen(filename, "ab");
     if (file == NULL) {
-        return ZELDA64_IO_ERROR;
+        result = ZELDA64_IO_ERROR;
+        goto cleanup_list;
     }
 
-    {
-        struct zelda64_zmf_chunk_header const header = {
-            .type = {'Z', 'M', 'O', 'P'},
-            .length = (uint32_t) rom->dma_info.count,
-            .checksum = 0,
-            .reserved = {0}
-        };
+    struct zelda64_zmf_chunk_header const header = {
+        .type = {'Z', 'M', 'C', 'L'},
+        .length = (uint32_t) list_size,
+        .checksum = zelda64_zmf_chunk_checksum(0, list, list_size),
+    };
 
-        uint8_t chunk[0x10] = {0};
-        result = zelda64_zmf_write_chunk_header(chunk, sizeof chunk, &header);
-        if (result != ZELDA64_OK) {
-            goto cleanup_file;
-        }
-
-        if (fwrite(chunk, sizeof chunk, 1, file) != 1) {
-            result = ZELDA64_IO_ERROR;
-            goto cleanup_file;
-        }
+    uint8_t chunk[0x10] = {0};
+    result = zelda64_zmf_write_chunk_header(chunk, sizeof chunk, &header);
+    if (result != ZELDA64_OK) {
+        goto cleanup_file;
     }
 
-    size_t entries_out = 0;
-    for (size_t i = 0; i < rom->dma_info.count; i += 0x10) {
-        uint8_t chunk[0x10] = {0};
-        size_t const remaining = rom->dma_info.count - entries_out;
-        size_t const count = remaining < sizeof chunk ? remaining : sizeof chunk;
+    if (fwrite(chunk, sizeof chunk, 1, file) != 1) {
+        result = ZELDA64_IO_ERROR;
+        goto cleanup_file;
+    }
 
-        for (size_t j = 0; j < count; ++j) {
-            struct zelda64_dma_entry const* entry = &rom->dma_table[i + j];
-            enum zelda64_dma_kind const kind = zelda64_dma_entry_kind(entry);
-            chunk[j] = (uint8_t) zelda64_dma_kind_to_op(kind);
-        }
-
-        if (fwrite(chunk, sizeof chunk, 1, file) != 1) {
-            result = ZELDA64_IO_ERROR;
-            goto cleanup_file;
-        }
-
-        entries_out += count;
+    if (fwrite(list, padded, 1, file) != 1) {
+        result = ZELDA64_IO_ERROR;
     }
 
 cleanup_file:
     fclose(file);
+cleanup_list:
+    free(list);
     return result;
 }
 
@@ -124,105 +123,11 @@ zelda64_make_rom_manifest(char const* filename, struct zelda64_rom const* rom) {
         return result;
     }
 
-    return zelda64_manifest_append_op_list(filename, rom);
+    return zelda64_manifest_append_copy_list(filename, rom);
 }
 
 enum zelda64_result
 zelda64_read_rom_op_list(char const* filename, struct zelda64_rom const* rom,
                          uint8_t* ops, size_t const count) {
-    if (filename == NULL || rom == NULL || ops == NULL) {
-        return ZELDA64_INVALID_PARAMETER;
-    }
-
-    FILE* file = fopen(filename, "rb");
-    if (file == NULL) {
-        return ZELDA64_IO_ERROR;
-    }
-
-    enum zelda64_result result = ZELDA64_OK;
-
-    if (fseek(file, 0, SEEK_END) != 0) {
-        result = ZELDA64_IO_ERROR;
-        goto cleanup_file;
-    }
-    long const file_size = ftell(file);
-    if (file_size < 0) {
-        result = ZELDA64_IO_ERROR;
-        goto cleanup_file;
-    }
-    rewind(file);
-
-    uint8_t buffer[ZELDA64_ZMF_HEADER_SIZE];
-    if (fread(buffer, sizeof buffer, 1, file) != 1) {
-        result = ZELDA64_BAD_MANIFEST;
-        goto cleanup_file;
-    }
-
-    struct zelda64_zmf_header header;
-    result = zelda64_zmf_read_header(&header, buffer, sizeof buffer);
-    if (result != ZELDA64_OK) {
-        goto cleanup_file;
-    }
-
-    if (ZELDA64_ZMF_VERSION_MAJOR(header.version) > ZELDA64_ZMF_VERSION_MAJOR(ZELDA64_ZMF_VERSION)) {
-        result = ZELDA64_UNSUPPORTED_VERSION;
-        goto cleanup_file;
-    }
-
-    if (memcmp(header.game_code, rom->info.header.game_code, sizeof header.game_code) != 0
-        || header.game_version != rom->info.header.version) {
-        logf_error("manifest is for %.4s version %u, ROM is %.4s version %u",
-                   header.game_code, header.game_version,
-                   rom->info.header.game_code, rom->info.header.version);
-        result = ZELDA64_BAD_MANIFEST;
-        goto cleanup_file;
-    }
-
-    logf_info("Manifest '%s' is for %.4s version %d", filename, header.game_code, header.game_version + 1);
-
-    size_t position = ZELDA64_ZMF_HEADER_SIZE;
-    for (;;) {
-        if (position >= (size_t) file_size) {
-            result = ZELDA64_NOT_FOUND;
-            goto cleanup_file;
-        }
-
-        uint8_t bytes[ZELDA64_ZMF_CHUNK_HEADER_SIZE];
-        if (fseek(file, (long) position, SEEK_SET) != 0 || fread(bytes, sizeof bytes, 1, file) != 1) {
-            result = ZELDA64_BAD_MANIFEST;
-            goto cleanup_file;
-        }
-
-        struct zelda64_zmf_chunk_header chunk;
-        result = zelda64_zmf_read_chunk_header(&chunk, bytes, sizeof bytes);
-        if (result != ZELDA64_OK) {
-            goto cleanup_file;
-        }
-
-        size_t payload = 0;
-        size_t next = 0;
-        result = zelda64_zmf_chunk_extent(&chunk, position, (size_t) file_size,
-                                          &payload, &next);
-        if (result != ZELDA64_OK) {
-            goto cleanup_file;
-        }
-
-        if (memcmp(chunk.type, ZELDA64_ZMF_TYPE_OPS, sizeof chunk.type) == 0) {
-            if (chunk.length != count) {
-                logf_error("manifest describes %" PRIu32 " files, ROM has %zu",
-                           chunk.length, count);
-                result = ZELDA64_BAD_MANIFEST;
-            } else if (fseek(file, (long) payload, SEEK_SET) != 0
-                       || fread(ops, 1, count, file) != count) {
-                result = ZELDA64_BAD_MANIFEST;
-            }
-            goto cleanup_file;
-        }
-
-        position = next;
-    }
-
-cleanup_file:
-    fclose(file);
-    return result;
+    return ZELDA64_BAD_MANIFEST;
 }
