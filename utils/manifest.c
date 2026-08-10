@@ -283,7 +283,7 @@ zelda64_manifest_check_input_rom(struct zelda64_manifest const* manifest,
         return ZELDA64_BAD_MANIFEST;
     }
 
-    logf_info("Manifest matches input ROM");
+    log_info("Manifest matches input ROM");
     return ZELDA64_OK;
 }
 
@@ -294,7 +294,7 @@ zelda64_manifest_check_output_rom(struct zelda64_manifest const* manifest,
         return ZELDA64_INVALID_PARAMETER;
     }
 
-    logf_info("Verifying output ROM against manifest");
+    log_info("Verifying output ROM against manifest");
     if (manifest->header.check_code != rom->info.header.check_code) {
         if (manifest->header.check_code != 0) {
             log_error("Output ROM check code does not match manifest!");
@@ -308,7 +308,7 @@ zelda64_manifest_check_output_rom(struct zelda64_manifest const* manifest,
         log_info("Manifest carries no check code, skipping check code verification");
     }
 
-    logf_info("Output ROM matches manifest, verification OK");
+    log_info("Output ROM matches manifest, verification OK");
     return ZELDA64_OK;
 }
 
