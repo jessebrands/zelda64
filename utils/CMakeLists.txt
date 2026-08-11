@@ -1,4 +1,4 @@
-find_package(yaz0 0.4 REQUIRED)
+find_package(yaz0 1.0 REQUIRED)
 
 add_executable(decompress
         decompress.c
