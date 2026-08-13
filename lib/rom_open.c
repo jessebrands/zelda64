@@ -23,6 +23,7 @@
 #include "allocator.h"
 #include "error.h"
 #include "rom.h"
+#include "source_file.h"
 
 struct zelda64_rom*
 zelda64_open(char const* filename,
@@ -47,6 +48,7 @@ zelda64_open_with_allocator(char const* filename,
         return NULL;
     }
 
+    // Allocate memory for the ROM state.
     struct zelda64_rom* rom = zelda64_alloc(allocator, sizeof *rom);
     if (rom == NULL) {
         zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
@@ -55,6 +57,13 @@ zelda64_open_with_allocator(char const* filename,
 
     *rom = (struct zelda64_rom){0};
     rom->allocator = allocator;
+
+    // Open the ROM source file.
+    if (zelda64_source_file_open(&rom->source, filename, allocator, error) != ZELDA64_OK) {
+        zelda64_close(rom);
+        return NULL;
+    }
+
     return rom;
 }
 
@@ -64,5 +73,6 @@ zelda64_close(struct zelda64_rom* rom) {
         return;
     }
 
+    zelda64_source_close(&rom->source, rom->allocator);
     zelda64_free(rom->allocator, rom);
 }

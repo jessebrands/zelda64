@@ -23,8 +23,11 @@
 
 #include "zelda64/zelda64.h"
 
+#include "source.h"
+
 struct zelda64_rom {
     struct zelda64_allocator allocator;
+    struct zelda64_source source;
 };
 
 #endif //LIBZELDA64_ROM_H
