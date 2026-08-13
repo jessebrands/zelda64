@@ -54,7 +54,7 @@ struct zelda64_source {
 };
 
 static inline zelda64_ssize_t
-zelda64_source_read(struct zelda64_source* source,
+zelda64_source_read(struct zelda64_source const* source,
                     void* buffer, size_t const size,
                     zelda64_offset_t const offset,
                     struct zelda64_error* error) {
@@ -79,7 +79,7 @@ zelda64_source_read(struct zelda64_source* source,
 }
 
 static inline zelda64_ssize_t
-zelda64_source_read_exact(struct zelda64_source* source,
+zelda64_source_read_exact(struct zelda64_source const* source,
                           void* buffer, size_t const size,
                           zelda64_offset_t const offset,
                           struct zelda64_error* error) {
@@ -97,7 +97,7 @@ zelda64_source_read_exact(struct zelda64_source* source,
 }
 
 static inline zelda64_ssize_t
-zelda64_source_size(struct zelda64_source* source, struct zelda64_error* error) {
+zelda64_source_size(struct zelda64_source const* source, struct zelda64_error* error) {
     if (source == NULL || source->size == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return -1;
