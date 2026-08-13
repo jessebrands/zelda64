@@ -41,6 +41,7 @@
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 enum zelda64_result {
@@ -80,6 +81,9 @@ zelda64_open_with_allocator(char const* filename, struct zelda64_allocator alloc
 
 ZELDA64_API void
 zelda64_close(struct zelda64_rom* rom);
+
+ZELDA64_API char const*
+zelda64_error_string(struct zelda64_error const* error);
 
 ZELDA64_API int
 zelda64_version(void);
