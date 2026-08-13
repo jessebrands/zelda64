@@ -42,11 +42,13 @@ set(LIBZELDA64_PRIVATE_HEADERS
         lib/allocator.h
         lib/error.h
         lib/source.h
+        lib/source_file.h
         lib/rom.h)
 
 set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/rom_open.c
+        lib/source_file.c
         lib/version.c)
 
 if (ZELDA64_BUILD_SHARED)
