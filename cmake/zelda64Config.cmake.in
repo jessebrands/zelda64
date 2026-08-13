@@ -1,5 +1,0 @@
-@PACKAGE_INIT@
-
-include("${CMAKE_CURRENT_LIST_DIR}/zelda64Targets.cmake")
-
-check_required_components(zelda64)

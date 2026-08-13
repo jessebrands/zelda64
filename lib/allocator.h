@@ -1,5 +1,5 @@
 /*
- * rom.h: Nintendo 64 ROM related constants
+ * allocator.h: allocator utilities
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of libzelda64.
@@ -18,23 +18,19 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBZELDA64_ROM_H
-#define LIBZELDA64_ROM_H
+#ifndef LIBZELDA64_ALLOCATOR_H
+#define LIBZELDA64_ALLOCATOR_H
 
-/*
- * Offsets in the IPL3 MAKEROM for specific values.
- */
-#define ROM_OFFSET_RESERVED0           0x00
-#define ROM_OFFSET_PI_CONFIG           0x01
-#define ROM_OFFSET_CLOCK_RATE          0x04
-#define ROM_OFFSET_BOOT_ADDRESS        0x08
-#define ROM_OFFSET_LIBULTRA_VERSION    0x0C
-#define ROM_OFFSET_CHECK_CODE          0x10
-#define ROM_OFFSET_RESERVED1           0x18
-#define ROM_OFFSET_TITLE               0x20
-#define ROM_OFFSET_RESERVED2           0x34
-#define ROM_OFFSET_GAME_CODE           0x3B
-#define ROM_OFFSET_VERSION             0x3F
-#define ROM_OFFSET_BOOTCODE            0x40
+#include "zelda64/zelda64.h"
 
-#endif //LIBZELDA64_ROM_H
+static inline void*
+zelda64_alloc(struct zelda64_allocator const allocator, size_t const size) {
+    return allocator.alloc(allocator.opaque, size);
+}
+
+static inline void
+zelda64_free(struct zelda64_allocator const allocator, void* ptr) {
+    allocator.free(allocator.opaque, ptr);
+}
+
+#endif //LIBZELDA64_ALLOCATOR_H

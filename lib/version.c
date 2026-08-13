@@ -1,5 +1,5 @@
 /*
- * crc32.h: CRC-32/IEEE checksum
+ * version.c: version query functions
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of libzelda64.
@@ -18,15 +18,14 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBZELDA64_CRC32_H
-#define LIBZELDA64_CRC32_H
+#include "zelda64/zelda64.h"
 
-#include <stddef.h>
-#include <stdint.h>
+int
+zelda64_version(void) {
+    return ZELDA64_VERSION;
+}
 
-/*
- * Calculates CRC32/IEEE checksum.
- */
-uint32_t zelda64_crc32(uint32_t crc, uint8_t const* data, size_t size);
-
-#endif //LIBZELDA64_CRC32_H
+char const*
+zelda64_version_string(void) {
+    return ZELDA64_VERSION_STRING;
+}
