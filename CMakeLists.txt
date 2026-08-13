@@ -40,6 +40,7 @@ set(LIBZELDA64_PUBLIC_HEADERS
 
 set(LIBZELDA64_PRIVATE_HEADERS
         lib/allocator.h
+        lib/bytes.h
         lib/error.h
         lib/source.h
         lib/source_file.h
