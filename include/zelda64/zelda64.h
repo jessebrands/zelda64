@@ -49,6 +49,7 @@ enum zelda64_result {
     ZELDA64_MEMORY_ERROR = -2,
     ZELDA64_OUT_OF_RANGE = -3,
     ZELDA64_TRUNCATED = -4,
+    ZELDA64_ERRNO = -5,
 };
 
 typedef void* (zelda64_alloc_func)(void* opaque, size_t size);

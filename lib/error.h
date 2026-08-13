@@ -21,6 +21,8 @@
 #ifndef LIBZELDA64_ERROR_H
 #define LIBZELDA64_ERROR_H
 
+#include <errno.h>
+
 #include "zelda64/zelda64.h"
 
 static inline void
@@ -29,6 +31,42 @@ zelda64_set_error(struct zelda64_error* error, enum zelda64_result const result)
         error->result = result;
         error->sys_error = 0;
     }
+}
+
+static inline enum zelda64_result
+zelda64_return_error(struct zelda64_error* error, enum zelda64_result const result) {
+    zelda64_set_error(error, result);
+    return result;
+}
+
+static inline void
+zelda64_set_sys_error(struct zelda64_error* error,
+                      enum zelda64_result const result, int const sys_error) {
+    if (error != NULL) {
+        error->result = result;
+        error->sys_error = sys_error;
+    }
+}
+
+static inline enum zelda64_result
+zelda64_return_sys_error(struct zelda64_error* error,
+                         enum zelda64_result const result, int const sys_error) {
+    zelda64_set_sys_error(error, result, sys_error);
+    return result;
+}
+
+static inline void
+zelda64_set_errno(struct zelda64_error* error) {
+    if (error != NULL) {
+        error->result = ZELDA64_ERRNO;
+        error->sys_error = errno;
+    }
+}
+
+static inline enum zelda64_result
+zelda64_return_errno(struct zelda64_error* error) {
+    zelda64_set_errno(error);
+    return ZELDA64_ERRNO;
 }
 
 #endif //LIBZELDA64_ERROR_H
