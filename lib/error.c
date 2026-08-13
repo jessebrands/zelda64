@@ -32,6 +32,7 @@ zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_TRUNCATED: return "truncated";
         case ZELDA64_ERRNO: return "system error";
         case ZELDA64_NO_DMADATA: return "no DMADATA";
+        case ZELDA64_DELETED: return "deleted";
     }
     return "unknown";
 }

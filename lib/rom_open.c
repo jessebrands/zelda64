@@ -23,7 +23,7 @@
 #include "allocator.h"
 #include "error.h"
 #include "rom.h"
-#include "source_file.h"
+#include "source.h"
 
 struct zelda64_rom*
 zelda64_open(char const* filename, struct zelda64_error* error) {

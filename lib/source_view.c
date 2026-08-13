@@ -20,7 +20,7 @@
 
 #include <assert.h>
 
-#include "source_view.h"
+#include "source.h"
 
 struct zelda64_source_view {
     struct zelda64_source const* source;

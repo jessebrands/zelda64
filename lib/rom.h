@@ -34,7 +34,6 @@ struct zelda64_dma_entry {
     uint32_t rom_end;
 };
 
-
 struct zelda64_dmadata_info {
     uint32_t offset;
     uint32_t size;
@@ -52,5 +51,9 @@ struct zelda64_rom {
 enum zelda64_result
 zelda64_read_dmadata(struct zelda64_rom* rom,
                      struct zelda64_error* error);
+
+enum zelda64_result
+zelda64_rom_file(struct zelda64_source* file, struct zelda64_rom const* rom, size_t index,
+                 struct zelda64_error* error);
 
 #endif //LIBZELDA64_ROM_H

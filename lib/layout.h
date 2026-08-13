@@ -1,5 +1,5 @@
 /*
- * source_view.h: non-owning views over a source
+ * layout.h: DMADATA layout builder
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of libzelda64.
@@ -18,17 +18,13 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBZELDA64_SOURCE_VIEW_H
-#define LIBZELDA64_SOURCE_VIEW_H
+#ifndef LIBZELDA64_LAYOUT_H
+#define LIBZELDA64_LAYOUT_H
 
-#include "source.h"
+#include "allocator.h"
 
-int
-zelda64_source_view_from(struct zelda64_source* view,
-                         zelda64_offset_t offset, size_t size,
-                         struct zelda64_source const* source,
-                         struct zelda64_allocator allocator,
-                         struct zelda64_error* error);
+struct zelda64_dmadata_layout {
+    struct zelda64_allocator allocator;
+};
 
-
-#endif //LIBZELDA64_SOURCE_VIEW_H
+#endif //LIBZELDA64_LAYOUT_H

@@ -43,16 +43,18 @@ set(LIBZELDA64_PRIVATE_HEADERS
         lib/allocator.h
         lib/bytes.h
         lib/error.h
+        lib/layout.h
         lib/source.h
-        lib/source_file.h
-        lib/source_view.h
         lib/rom.h)
 
 set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/error.c
+        lib/layout.c
+        lib/rom_decompress.c
         lib/rom_dma.c
         lib/rom_open.c
+        lib/rom_stat.c
         lib/source_file.c
         lib/source_view.c
         lib/version.c)

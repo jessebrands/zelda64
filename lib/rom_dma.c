@@ -41,6 +41,32 @@ read_entry_unsafe(uint8_t const* data) {
     };
 }
 
+enum zelda64_result
+zelda64_rom_file(struct zelda64_source* file,
+                 struct zelda64_rom const* rom, size_t const index,
+                 struct zelda64_error* error) {
+    assert(file != NULL);
+    assert(rom != NULL);
+    assert(error != NULL);
+
+    if (index >= rom->dmadata_info.count) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+    }
+
+    // Stat the file so we can create a view over it.
+    struct zelda64_stat st;
+    if (zelda64_stat(&st, rom, index, error) != ZELDA64_OK) {
+        return error->result;
+    }
+
+    return zelda64_source_view_from(
+        file, st.offset, st.size,
+        &rom->source,
+        rom->allocator,
+        error
+    );
+}
+
 static bool
 can_be_makerom(struct zelda64_dma_entry const entry) {
     return entry.vrom_start == 0 && entry.vrom_end != 0

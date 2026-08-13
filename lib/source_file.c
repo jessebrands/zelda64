@@ -23,7 +23,6 @@
 #include <stdio.h>
 
 #include "source.h"
-#include "source_file.h"
 
 struct zelda64_source_file {
     FILE* handle;
