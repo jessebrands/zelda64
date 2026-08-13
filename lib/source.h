@@ -63,6 +63,12 @@ zelda64_source_read(struct zelda64_source* source,
         return -1;
     }
 
+    // Can we return a read count at all?
+    if (size > ZELDA64_SSIZE_MAX) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return -1;
+    }
+
     // An empty buffer is okay, so long as we're reading nothing.
     if (buffer == NULL && size > 0) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
@@ -77,12 +83,6 @@ zelda64_source_read_exact(struct zelda64_source* source,
                           void* buffer, size_t const size,
                           zelda64_offset_t const offset,
                           struct zelda64_error* error) {
-    // We cannot check exactness for values that are too big...
-    if (size > ZELDA64_SSIZE_MAX) {
-        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
-        return -1;
-    }
-
     zelda64_ssize_t const bytes_in = zelda64_source_read(source, buffer, size, offset, error);
     if (bytes_in < 0) {
         return bytes_in;
