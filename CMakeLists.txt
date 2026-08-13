@@ -45,6 +45,7 @@ set(LIBZELDA64_PRIVATE_HEADERS
         lib/error.h
         lib/source.h
         lib/source_file.h
+        lib/source_view.h
         lib/rom.h)
 
 set(LIBZELDA64_SOURCES
@@ -53,6 +54,7 @@ set(LIBZELDA64_SOURCES
         lib/rom_dma.c
         lib/rom_open.c
         lib/source_file.c
+        lib/source_view.c
         lib/version.c)
 
 if (ZELDA64_BUILD_SHARED)
