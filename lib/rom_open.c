@@ -26,8 +26,7 @@
 #include "source_file.h"
 
 struct zelda64_rom*
-zelda64_open(char const* filename,
-             struct zelda64_error* error) {
+zelda64_open(char const* filename, struct zelda64_error* error) {
     struct zelda64_allocator const allocator = zelda64_default_allocator();
     return zelda64_open_with_allocator(filename, allocator, error);
 }
@@ -36,6 +35,11 @@ struct zelda64_rom*
 zelda64_open_with_allocator(char const* filename,
                             struct zelda64_allocator const allocator,
                             struct zelda64_error* error) {
+    struct zelda64_error local_error;
+    if (error == NULL) {
+        error = &local_error;
+    }
+
     // Can't open a file we don't have.
     if (filename == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
@@ -59,7 +63,12 @@ zelda64_open_with_allocator(char const* filename,
     rom->allocator = allocator;
 
     // Open the ROM source file.
-    if (zelda64_source_file_open(&rom->source, filename, allocator, error) != ZELDA64_OK) {
+    if (zelda64_source_file_open(&rom->source, filename, allocator, error) < 0) {
+        zelda64_close(rom);
+        return NULL;
+    }
+
+    if (zelda64_read_dmadata(rom, error) != ZELDA64_OK) {
         zelda64_close(rom);
         return NULL;
     }
@@ -73,6 +82,7 @@ zelda64_close(struct zelda64_rom* rom) {
         return;
     }
 
+    zelda64_free(rom->allocator, rom->dmadata);
     zelda64_source_close(&rom->source, rom->allocator);
     zelda64_free(rom->allocator, rom);
 }

@@ -24,6 +24,7 @@
 #include <zelda64/config.h>
 
 #include <stddef.h>
+#include <stdint.h>
 
 #if defined _WIN32 || defined __CYGWIN__
 #  if defined ZELDA64_STATIC
@@ -42,6 +43,7 @@
 #ifdef __cplusplus
 extern "C" {
 
+
 #endif
 
 enum zelda64_result {
@@ -51,6 +53,7 @@ enum zelda64_result {
     ZELDA64_OUT_OF_RANGE = -3,
     ZELDA64_TRUNCATED = -4,
     ZELDA64_ERRNO = -5,
+    ZELDA64_NO_DMADATA = -6,
 };
 
 typedef void* (zelda64_alloc_func)(void* opaque, size_t size);
@@ -81,6 +84,9 @@ zelda64_open_with_allocator(char const* filename, struct zelda64_allocator alloc
 
 ZELDA64_API void
 zelda64_close(struct zelda64_rom* rom);
+
+ZELDA64_API size_t
+zelda64_dmadata_entries_count(struct zelda64_rom const* rom);
 
 ZELDA64_API char const*
 zelda64_error_string(struct zelda64_error const* error);

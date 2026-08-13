@@ -41,19 +41,19 @@ zelda64_source_file_size(void* opaque, struct zelda64_error* error);
 static void
 zelda64_source_file_close(void* opaque, struct zelda64_allocator allocator);
 
-enum zelda64_result
+int
 zelda64_source_file_open(struct zelda64_source* source,
                          char const* filename,
                          struct zelda64_allocator allocator,
                          struct zelda64_error* error) {
     if (source == NULL || filename == NULL) {
-        return zelda64_return_error(error, ZELDA64_INVALID_PARAMETER);
+        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
 
     // Allocate the file state struct.
     struct zelda64_source_file* file = zelda64_alloc(allocator, sizeof *file);
     if (file == NULL) {
-        return zelda64_return_error(error, ZELDA64_MEMORY_ERROR);
+        return zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
     }
 
     // Open the file for binary reading.
@@ -61,7 +61,7 @@ zelda64_source_file_open(struct zelda64_source* source,
     if (file->handle == NULL) {
         int const sys_error = errno;
         zelda64_free(allocator, file);
-        return zelda64_return_sys_error(error, ZELDA64_ERRNO, sys_error);
+        return zelda64_set_sys_error(error, ZELDA64_ERRNO, sys_error);
     }
 
     // Set the source vtable and opaque.

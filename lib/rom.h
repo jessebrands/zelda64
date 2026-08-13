@@ -25,9 +25,32 @@
 
 #include "source.h"
 
+#define ZELDA64_DMA_ENTRY_SIZE 16
+
+struct zelda64_dma_entry {
+    uint32_t vrom_start;
+    uint32_t vrom_end;
+    uint32_t rom_start;
+    uint32_t rom_end;
+};
+
+
+struct zelda64_dmadata_info {
+    uint32_t offset;
+    uint32_t size;
+    size_t count;
+};
+
 struct zelda64_rom {
     struct zelda64_allocator allocator;
     struct zelda64_source source;
+
+    struct zelda64_dmadata_info dmadata_info;
+    struct zelda64_dma_entry* dmadata;
 };
+
+enum zelda64_result
+zelda64_read_dmadata(struct zelda64_rom* rom,
+                     struct zelda64_error* error);
 
 #endif //LIBZELDA64_ROM_H

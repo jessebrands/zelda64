@@ -25,7 +25,7 @@
 
 #include "source.h"
 
-enum zelda64_result
+int
 zelda64_source_file_open(struct zelda64_source* source,
                          char const* filename,
                          struct zelda64_allocator allocator,

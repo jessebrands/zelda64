@@ -16,6 +16,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Library settings
 #
 option(ZELDA64_BUILD_SHARED "Enable building libzelda64 as shared library" ON)
+option(ZELDA64_BUILD_UTILITIES "Enable building utilities" ${PROJECT_IS_TOP_LEVEL})
 
 configure_file(
         include/zelda64/config.h.in
@@ -49,6 +50,7 @@ set(LIBZELDA64_PRIVATE_HEADERS
 set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/error.c
+        lib/rom_dma.c
         lib/rom_open.c
         lib/source_file.c
         lib/version.c)
@@ -76,4 +78,15 @@ if (ZELDA64_BUILD_SHARED)
     set_target_properties(libzelda64_shared PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(libzelda64_shared PUBLIC c_std_99)
     target_compile_options(libzelda64_shared PRIVATE ${ZELDA64_WARNING_FLAGS})
+endif ()
+
+if (ZELDA64_BUILD_UTILITIES AND ZELDA64_BUILD_SHARED)
+    add_executable(decompress
+            src/decompress.c)
+
+    target_link_libraries(decompress
+            PRIVATE zelda64::zelda64)
+
+    target_compile_features(decompress PRIVATE c_std_99)
+    target_compile_options(decompress PRIVATE ${ZELDA64_WARNING_FLAGS})
 endif ()

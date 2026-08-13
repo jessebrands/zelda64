@@ -21,10 +21,14 @@
 #ifndef LIBZELDA64_BYTES_H
 #define LIBZELDA64_BYTES_H
 
+#include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 
 static inline uint32_t
 zelda64_read_u32(uint8_t const* p) {
+    assert(p != NULL);
+
     return ((uint32_t) p[0] << 24)
          | ((uint32_t) p[1] << 16)
          | ((uint32_t) p[2] << 8)
@@ -33,6 +37,8 @@ zelda64_read_u32(uint8_t const* p) {
 
 static inline void
 zelda64_write_u32(uint8_t* p, uint32_t const n) {
+    assert(p != NULL);
+
     p[0] = (uint8_t) (n >> 24);
     p[1] = (uint8_t) (n >> 16);
     p[2] = (uint8_t) (n >> 8);

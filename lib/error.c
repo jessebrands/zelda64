@@ -31,6 +31,7 @@ zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_OUT_OF_RANGE: return "out of range";
         case ZELDA64_TRUNCATED: return "truncated";
         case ZELDA64_ERRNO: return "system error";
+        case ZELDA64_NO_DMADATA: return "no DMADATA";
     }
     return "unknown";
 }
@@ -38,7 +39,7 @@ zelda64_result_string(enum zelda64_result const result) {
 char const*
 zelda64_error_string(struct zelda64_error const* error) {
     if (error == NULL) {
-        return NULL;
+        return "(null)";
     }
 
     if (error->result == ZELDA64_ERRNO) {
