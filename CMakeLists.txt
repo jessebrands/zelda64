@@ -51,6 +51,7 @@ set(LIBZELDA64_SOURCES
         lib/error.c
         lib/rom_dma.c
         lib/rom_open.c
+        lib/rom_read.c
         lib/rom_stat.c
         lib/source_file.c
         lib/version.c)
