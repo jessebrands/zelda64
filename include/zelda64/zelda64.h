@@ -75,11 +75,18 @@ struct zelda64_allocator {
     void* opaque;
 };
 
-struct zelda64_rom;
-
 struct zelda64_error {
     enum zelda64_result result;
     int sys_error;
+};
+
+struct zelda64_rom;
+
+struct zelda64_dmadata {
+    uint32_t vrom_start;
+    uint32_t vrom_end;
+    uint32_t rom_start;
+    uint32_t rom_end;
 };
 
 struct zelda64_stat {

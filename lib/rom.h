@@ -27,13 +27,6 @@
 
 #define ZELDA64_DMA_ENTRY_SIZE 16
 
-struct zelda64_dmadata {
-    uint32_t vrom_start;
-    uint32_t vrom_end;
-    uint32_t rom_start;
-    uint32_t rom_end;
-};
-
 struct zelda64_dmadata_info {
     uint32_t offset;
     uint32_t size;
