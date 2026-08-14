@@ -185,8 +185,11 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    char const* rom_filename = argv[1];
+    char const* destination_path = argv[2];
+
     struct zelda64_error error = {0};
-    struct zelda64_rom* rom = zelda64_open(argv[1], &error);
+    struct zelda64_rom* rom = zelda64_open(rom_filename, &error);
     if (rom == NULL) {
         fprintf(stderr, "extract: error: cannot open ROM: %s", zelda64_error_string(&error));
         return EXIT_FAILURE;
@@ -194,7 +197,7 @@ int main(int argc, char** argv) {
 
     size_t const count = zelda64_file_count(rom, &error);
     for (zelda64_index_t i = 0; i < count; ++i) {
-        if (extract_file(argv[2], rom, i, &error) != ZELDA64_OK) {
+        if (extract_file(destination_path, rom, i, &error) != ZELDA64_OK) {
             zelda64_close(rom);
             return EXIT_FAILURE;
         }
