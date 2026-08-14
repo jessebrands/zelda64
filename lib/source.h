@@ -31,9 +31,6 @@
 
 #define ZELDA64_SSIZE_MAX INT64_MAX
 
-typedef size_t zelda64_offset_t;
-typedef int64_t zelda64_ssize_t;
-
 typedef zelda64_ssize_t
 (zelda64_read_func)(void* opaque,
                     void* buffer, size_t size,

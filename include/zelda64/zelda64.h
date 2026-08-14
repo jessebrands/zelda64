@@ -47,6 +47,10 @@ extern "C" {
 
 #endif
 
+typedef size_t zelda64_index_t;
+typedef size_t zelda64_offset_t;
+typedef int64_t zelda64_ssize_t;
+
 enum zelda64_result {
     ZELDA64_OK = 0,
     ZELDA64_INVALID_PARAMETER = -1,
@@ -124,19 +128,40 @@ ZELDA64_API void
 zelda64_close(struct zelda64_rom* rom);
 
 /*
- * Returns information about a file in a ROM.
- */
-ZELDA64_API enum zelda64_result
-zelda64_stat(struct zelda64_stat* st,
-             struct zelda64_rom const* rom, size_t index,
-             struct zelda64_error* error);
-
-
-/*
  * Returns how many files are in a ROM.
  */
 ZELDA64_API size_t
 zelda64_file_count(struct zelda64_rom const* rom);
+
+/*
+ * Returns information about a file in a ROM.
+ */
+ZELDA64_API enum zelda64_result
+zelda64_stat(struct zelda64_stat* st,
+             struct zelda64_rom const* rom, zelda64_index_t index,
+             struct zelda64_error* error);
+
+/*
+ * Returns a read-only pointer to the DMADATA.
+ */
+ZELDA64_API struct zelda64_dmadata const*
+zelda64_dmadata(struct zelda64_rom const* rom);
+
+/*
+ * Returns a read-only pointer to a DMADATA entry.
+ */
+ZELDA64_API struct zelda64_dmadata const*
+zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t index,
+                      struct zelda64_error* error);
+
+/*
+ * Reads bytes directly from the ROM to a buffer.
+ */
+ZELDA64_API zelda64_ssize_t
+zelda64_read_storage(void* buffer, size_t size,
+                     struct zelda64_rom const* rom,
+                     zelda64_index_t index, uint32_t offset,
+                     struct zelda64_error* error);
 
 /*
  * Returns a human-readable string for an error.

@@ -81,7 +81,7 @@ zelda64_dma_entry_extent(struct zelda64_dmadata const* entry,
 
 enum zelda64_result
 zelda64_stat(struct zelda64_stat* st,
-             struct zelda64_rom const* rom, size_t index,
+             struct zelda64_rom const* rom, zelda64_index_t const index,
              struct zelda64_error* error) {
     if (st == NULL || rom == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);

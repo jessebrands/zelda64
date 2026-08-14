@@ -226,3 +226,24 @@ zelda64_file_count(struct zelda64_rom const* rom) {
     assert(rom != NULL);
     return rom->dmadata_info.count;
 }
+
+struct zelda64_dmadata const*
+zelda64_dmadata(struct zelda64_rom const* rom) {
+    return rom->dmadata;
+}
+
+struct zelda64_dmadata const*
+zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t const index,
+                      struct zelda64_error* error) {
+    struct zelda64_error local_error;
+    if (error == NULL) {
+        error = &local_error;
+    }
+
+    if (index >= rom->dmadata_info.count) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return NULL;
+    }
+
+    return &rom->dmadata[index];
+}
