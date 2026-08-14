@@ -67,6 +67,9 @@ zelda64_dma_entry_extent(struct zelda64_dmadata const* entry,
         }
 
         case ZELDA64_ENTRY_COMPRESSED: {
+            if (entry->vrom_start > entry->vrom_end) {
+                return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+            }
             if (entry->rom_start > entry->rom_end) {
                 return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
             }
