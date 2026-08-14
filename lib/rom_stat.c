@@ -18,8 +18,17 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <yaz0/yaz0.h>
+
 #include "rom.h"
 #include "zelda64/zelda64.h"
+
+enum zelda64_entry_kind {
+    ZELDA64_ENTRY_EMPTY = 0,
+    ZELDA64_ENTRY_DELETED,
+    ZELDA64_ENTRY_STORED,
+    ZELDA64_ENTRY_COMPRESSED,
+};
 
 static enum zelda64_entry_kind
 zelda64_dma_entry_kind(struct zelda64_dmadata const* entry) {
@@ -98,21 +107,39 @@ zelda64_stat(struct zelda64_stat* st,
 
     uint32_t offset = 0;
     uint32_t size = 0;
-
-    struct zelda64_error extent_error = {0};
-    zelda64_dma_entry_extent(entry, &offset, &size, &extent_error);
-    if (extent_error.result != ZELDA64_OK) {
-        *error = extent_error;
+    if (zelda64_dma_entry_extent(entry, &offset, &size, error) != ZELDA64_OK) {
         return error->result;
     }
 
-    *st = (struct zelda64_stat){
-        .vrom_start = entry->vrom_start,
-        .vrom_end = entry->vrom_end,
+    struct zelda64_stat stat = {
+        .method = ZELDA64_METHOD_STORE,
         .offset = offset,
         .size = size,
-        .kind = kind,
+        .file_size = entry->vrom_end - entry->vrom_start,
     };
 
+    // If this file is a compressed file, we can get the real size from the
+    // Yaz0 file header instead.
+    if (kind == ZELDA64_ENTRY_COMPRESSED) {
+        stat.method = ZELDA64_METHOD_YAZ0;
+
+        // Sadly, libyaz0 forgot to export the header size in bytes.
+        // But a header struct is always at least as big!
+        uint8_t header_bytes[sizeof(struct yaz0_header)];
+        if (zelda64_source_read(&rom->source, header_bytes, sizeof header_bytes, offset, error) < 0) {
+            return error->result;
+        }
+
+        // Now we can read the header.
+        struct yaz0_header header = {0};
+        enum yaz0_result const result = yaz0_read_header(header_bytes, sizeof header_bytes, &header);
+        if (result != YAZ0_OK) {
+            return zelda64_set_sys_error(error, ZELDA64_DECOMPRESS_ERROR, result);
+        }
+
+        stat.file_size = header.uncompressed_size;
+    }
+
+    *st = stat;
     return ZELDA64_OK;
 }

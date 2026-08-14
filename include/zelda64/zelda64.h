@@ -63,11 +63,9 @@ enum zelda64_result {
     ZELDA64_DECOMPRESS_ERROR = -8,
 };
 
-enum zelda64_entry_kind {
-    ZELDA64_ENTRY_EMPTY = 0,
-    ZELDA64_ENTRY_DELETED,
-    ZELDA64_ENTRY_STORED,
-    ZELDA64_ENTRY_COMPRESSED,
+enum zelda64_method {
+    ZELDA64_METHOD_STORE = 0,
+    ZELDA64_METHOD_YAZ0 = 1,
 };
 
 typedef void* (zelda64_alloc_func)(void* opaque, size_t size);
@@ -95,11 +93,10 @@ struct zelda64_dmadata {
 };
 
 struct zelda64_stat {
-    uint32_t vrom_start;
-    uint32_t vrom_end;
-    uint32_t offset;
-    uint32_t size;
-    enum zelda64_entry_kind kind;
+    enum zelda64_method method; // What is stored in the ROM
+    uint32_t offset; // Offset in the ROM
+    uint32_t size; // Size of the file on the ROM
+    uint32_t file_size; // Real size of the file
 };
 
 /*

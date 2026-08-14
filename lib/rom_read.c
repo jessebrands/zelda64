@@ -154,15 +154,14 @@ zelda64_read_file(void* buffer, size_t const size,
     }
 
     // If the buffer is smaller than the file, we have a problem.
-    uint32_t const file_size = st.vrom_end - st.vrom_start;
-    if (size < (size_t) file_size) {
+    if (size < (size_t) st.file_size) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return -1;
     }
 
     // If this is a compressed file, we're going to have to decompress it.
-    if (st.kind == ZELDA64_ENTRY_COMPRESSED) {
-        return decompress(buffer, file_size, rom, &st, error);
+    if (st.method == ZELDA64_METHOD_YAZ0) {
+        return decompress(buffer, st.file_size, rom, &st, error);
     }
 
     // if this is a regular file, we can just dump the bytes.
