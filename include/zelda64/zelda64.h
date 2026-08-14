@@ -132,7 +132,7 @@ zelda64_close(struct zelda64_rom* rom);
  * Returns how many files are in a ROM.
  */
 ZELDA64_API size_t
-zelda64_file_count(struct zelda64_rom const* rom);
+zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error);
 
 /*
  * Returns information about a file in a ROM.
@@ -146,7 +146,8 @@ zelda64_stat(struct zelda64_stat* st,
  * Returns a read-only pointer to the DMADATA.
  */
 ZELDA64_API struct zelda64_dmadata const*
-zelda64_dmadata(struct zelda64_rom const* rom);
+zelda64_dmadata(struct zelda64_rom const* rom,
+                struct zelda64_error* error);
 
 /*
  * Returns a read-only pointer to a DMADATA entry.

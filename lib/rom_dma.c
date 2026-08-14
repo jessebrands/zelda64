@@ -222,13 +222,34 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
 }
 
 size_t
-zelda64_file_count(struct zelda64_rom const* rom) {
-    assert(rom != NULL);
+zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
+    struct zelda64_error local_error;
+    if (error == NULL) {
+        error = &local_error;
+    }
+
+    // Can't grab the DMADATA from nothing.
+    if (rom == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return 0; // Valid ROMs always have 3 or more files, this is OK.
+    }
+
     return rom->dmadata_info.count;
 }
 
 struct zelda64_dmadata const*
-zelda64_dmadata(struct zelda64_rom const* rom) {
+zelda64_dmadata(struct zelda64_rom const* rom, struct zelda64_error* error) {
+    struct zelda64_error local_error;
+    if (error == NULL) {
+        error = &local_error;
+    }
+
+    // Can't grab the DMADATA from nothing.
+    if (rom == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return NULL;
+    }
+
     return rom->dmadata;
 }
 
@@ -240,6 +261,13 @@ zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t const index
         error = &local_error;
     }
 
+    // Grab the DMADATA from the ROM.
+    struct zelda64_dmadata const* dmadata = zelda64_dmadata(rom, error);
+    if (dmadata == NULL) {
+        return NULL;
+    }
+
+    // Is the entry within range?
     if (index >= rom->dmadata_info.count) {
         zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
         return NULL;
