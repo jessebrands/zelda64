@@ -21,12 +21,25 @@
 #ifndef LIBZELDA64_LAYOUT_H
 #define LIBZELDA64_LAYOUT_H
 
+#include "rom.h"
 #include "zelda64/zelda64.h"
+
+enum zelda64_from_type {
+    ZELDA64_FROM_ROM = 0,
+};
 
 struct zelda64_layout_entry {
     uint32_t vrom_start;
     uint32_t vrom_end;
+
     enum zelda64_operation operation;
+    enum zelda64_from_type from_type;
+    union {
+        struct {
+            struct zelda64_rom const* rom;
+            zelda64_index_t index;
+        } rom;
+    } from;
 };
 
 struct zelda64_dmadata_layout {

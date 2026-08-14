@@ -62,6 +62,10 @@ decompress_rom(struct zelda64_rom const* rom,
                 entry->operation = ZELDA64_OP_DECOMPRESS;
                 break;
         }
+
+        entry->from_type = ZELDA64_FROM_ROM;
+        entry->from.rom.rom = rom;
+        entry->from.rom.index = i;
     }
 
     return entries;
