@@ -72,6 +72,17 @@ enum zelda64_operation {
     ZELDA64_OP_DELETE = 3,
 };
 
+enum zelda64_pack {
+    ZELDA64_PACK_SPARSE = 0,
+    ZELDA64_PACK_DENSE = 1,
+};
+
+enum zelda64_pad {
+    ZELDA64_PAD_NONE = 0,
+    ZELDA64_PAD_ZERO = 1,
+    ZELDA64_PAD_RAMP = 2,
+};
+
 typedef void* (zelda64_alloc_func)(void* opaque, size_t size);
 
 typedef void (zelda64_free_func)(void* opaque, void* ptr);
@@ -101,6 +112,11 @@ struct zelda64_stat {
     uint32_t offset; // Offset in the ROM
     uint32_t size; // Size of the file on the ROM
     uint32_t file_size; // Real size of the file
+};
+
+struct zelda64_write_options {
+    enum zelda64_pack pack;
+    enum zelda64_pad pad;
 };
 
 /*
@@ -200,6 +216,12 @@ zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
 
 ZELDA64_API void
 zelda64_free_layout(struct zelda64_dmadata_layout* layout);
+
+ZELDA64_API enum zelda64_result
+zelda64_write(char const* filename,
+              struct zelda64_dmadata_layout const* layout,
+              struct zelda64_write_options const* options,
+              struct zelda64_error* error);
 
 /*
  * Returns a human-readable string for an error.

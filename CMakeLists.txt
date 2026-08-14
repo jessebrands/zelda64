@@ -56,6 +56,7 @@ set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/error.c
         lib/layout_free.c
+        lib/layout_write.c
         lib/rom_decompress.c
         lib/rom_dma.c
         lib/rom_open.c
