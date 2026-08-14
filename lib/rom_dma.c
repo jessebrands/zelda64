@@ -92,8 +92,10 @@ is_dmadata(struct zelda64_dmadata const e0,
         return false;
     }
 
+    // DMADATA needs to contain at least 3 entries and the size is always
+    // a multiple of the entry size!
     uint32_t const span = e2.vrom_end - e2.vrom_start;
-    if (span % ZELDA64_DMA_ENTRY_SIZE != 0) {
+    if (span < 3 * ZELDA64_DMA_ENTRY_SIZE || span % ZELDA64_DMA_ENTRY_SIZE != 0) {
         return false;
     }
 
