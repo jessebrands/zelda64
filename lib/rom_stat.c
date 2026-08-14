@@ -123,15 +123,15 @@ zelda64_stat(struct zelda64_stat* st,
     if (kind == ZELDA64_ENTRY_COMPRESSED) {
         stat.method = ZELDA64_METHOD_YAZ0;
 
-        // A compressed file is always at lest 16 bytes in the ROM, as it
+        // A compressed file is always at least 16 bytes in the ROM, as it
         // must contain the header.
-        if (stat.file_size < 16) {
+        if (stat.size < 16) {
             return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
         }
 
         // Sadly, libyaz0 forgot to export the header size in bytes.
         // But a header struct is always at least as big!
-        uint8_t header_bytes[sizeof(struct yaz0_header)];
+        uint8_t header_bytes[16];
         if (zelda64_source_read_exact(&rom->source, header_bytes, sizeof header_bytes, offset, error) < 0) {
             return error->result;
         }
