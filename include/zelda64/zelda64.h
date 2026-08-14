@@ -77,8 +77,6 @@ struct zelda64_allocator {
 
 struct zelda64_rom;
 
-struct zelda64_dmadata_layout;
-
 struct zelda64_error {
     enum zelda64_result result;
     int sys_error;
@@ -111,18 +109,6 @@ zelda64_stat(struct zelda64_stat* st,
 
 ZELDA64_API size_t
 zelda64_dmadata_entries_count(struct zelda64_rom const* rom);
-
-ZELDA64_API struct zelda64_dmadata_layout*
-zelda64_decompress(struct zelda64_rom const* rom,
-                   struct zelda64_error* error);
-
-ZELDA64_API struct zelda64_dmadata_layout*
-zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
-                                  struct zelda64_allocator allocator,
-                                  struct zelda64_error* error);
-
-ZELDA64_API void
-zelda64_free_layout(struct zelda64_dmadata_layout* layout);
 
 ZELDA64_API char const*
 zelda64_error_string(struct zelda64_error const* error);
