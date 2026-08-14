@@ -27,6 +27,12 @@
 
 #define ZELDA64_DMA_ENTRY_SIZE 16
 
+enum zelda64_dmadata_kind {
+    ZELDA64_ENTRY_DELETED,
+    ZELDA64_ENTRY_STORED,
+    ZELDA64_ENTRY_COMPRESSED,
+};
+
 struct zelda64_dmadata_info {
     uint32_t offset;
     uint32_t size;
@@ -40,6 +46,9 @@ struct zelda64_rom {
     struct zelda64_dmadata_info dmadata_info;
     struct zelda64_dmadata* dmadata;
 };
+
+enum zelda64_dmadata_kind
+zelda64_dmadata_kind(struct zelda64_dmadata const* entry);
 
 enum zelda64_result
 zelda64_read_dmadata(struct zelda64_rom* rom,

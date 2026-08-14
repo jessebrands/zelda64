@@ -23,20 +23,9 @@
 #include "rom.h"
 #include "zelda64/zelda64.h"
 
-enum zelda64_entry_kind {
-    ZELDA64_ENTRY_EMPTY = 0,
-    ZELDA64_ENTRY_DELETED,
-    ZELDA64_ENTRY_STORED,
-    ZELDA64_ENTRY_COMPRESSED,
-};
-
-static enum zelda64_entry_kind
-zelda64_dma_entry_kind(struct zelda64_dmadata const* entry) {
+enum zelda64_dmadata_kind
+zelda64_dmadata_kind(struct zelda64_dmadata const* entry) {
     assert(entry != NULL);
-
-    if (entry->vrom_end == entry->vrom_start) {
-        return ZELDA64_ENTRY_EMPTY;
-    }
     if (entry->rom_end == UINT32_MAX) {
         return ZELDA64_ENTRY_DELETED;
     }
@@ -54,14 +43,8 @@ zelda64_dma_entry_extent(struct zelda64_dmadata const* entry,
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
 
-    enum zelda64_entry_kind const kind = zelda64_dma_entry_kind(entry);
+    enum zelda64_dmadata_kind const kind = zelda64_dmadata_kind(entry);
     switch (kind) {
-        case ZELDA64_ENTRY_EMPTY: {
-            *offset = entry->rom_start;
-            *size = 0;
-            return ZELDA64_OK;
-        }
-
         case ZELDA64_ENTRY_DELETED: {
             return zelda64_set_error(error, ZELDA64_DELETED);
         }
@@ -103,7 +86,7 @@ zelda64_stat(struct zelda64_stat* st,
     }
 
     struct zelda64_dmadata const* entry = &rom->dmadata[index];
-    enum zelda64_entry_kind const kind = zelda64_dma_entry_kind(entry);
+    enum zelda64_dmadata_kind const kind = zelda64_dmadata_kind(entry);
 
     uint32_t offset = 0;
     uint32_t size = 0;
