@@ -98,7 +98,7 @@ zelda64_stat(struct zelda64_stat* st,
 
     struct zelda64_error extent_error = {0};
     zelda64_dma_entry_extent(entry, &offset, &size, &extent_error);
-    if (extent_error.result != ZELDA64_OK && extent_error.result != ZELDA64_DELETED) {
+    if (extent_error.result != ZELDA64_OK) {
         *error = extent_error;
         return error->result;
     }
