@@ -122,11 +122,4 @@ zelda64_source_file_open(struct zelda64_source* source,
                          struct zelda64_allocator allocator,
                          struct zelda64_error* error);
 
-int
-zelda64_source_view_from(struct zelda64_source* view,
-                         zelda64_offset_t offset, size_t size,
-                         struct zelda64_source const* source,
-                         struct zelda64_allocator allocator,
-                         struct zelda64_error* error);
-
 #endif //LIBZELDA64_SOURCE_H

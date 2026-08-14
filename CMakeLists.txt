@@ -56,7 +56,6 @@ set(LIBZELDA64_SOURCES
         lib/rom_open.c
         lib/rom_stat.c
         lib/source_file.c
-        lib/source_view.c
         lib/version.c)
 
 if (ZELDA64_BUILD_SHARED)

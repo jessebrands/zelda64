@@ -52,8 +52,4 @@ enum zelda64_result
 zelda64_read_dmadata(struct zelda64_rom* rom,
                      struct zelda64_error* error);
 
-enum zelda64_result
-zelda64_rom_file(struct zelda64_source* file, struct zelda64_rom const* rom, size_t index,
-                 struct zelda64_error* error);
-
 #endif //LIBZELDA64_ROM_H
