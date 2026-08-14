@@ -86,3 +86,18 @@ zelda64_close(struct zelda64_rom* rom) {
     zelda64_source_close(&rom->source, rom->allocator);
     zelda64_free(rom->allocator, rom);
 }
+
+zelda64_ssize_t
+zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error) {
+    struct zelda64_error local_error;
+    if (error == NULL) {
+        error = &local_error;
+    }
+
+    if (rom == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return -1;
+    }
+
+    return zelda64_source_size(&rom->source, error);
+}

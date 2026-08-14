@@ -172,6 +172,10 @@ zelda64_read_file(void* buffer, size_t size,
                   struct zelda64_rom const* rom, zelda64_index_t index,
                   struct zelda64_error* error);
 
+
+ZELDA64_API zelda64_ssize_t
+zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error);
+
 /*
  * Returns a human-readable string for an error.
  */
