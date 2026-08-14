@@ -39,11 +39,13 @@ write_file(char const* filename,
     }
 
     // And perform the copy.
-    if (fwrite(buffer, sizeof(uint8_t), size, file) != size) {
-        error->sys_error = errno;
-        error->result = ZELDA64_ERRNO;
-        fclose(file);
-        return error->result;
+    if (buffer != NULL && size > 0) {
+        if (fwrite(buffer, sizeof(uint8_t), size, file) != size) {
+            error->sys_error = errno;
+            error->result = ZELDA64_ERRNO;
+            fclose(file);
+            return error->result;
+        }
     }
 
     fclose(file);
@@ -65,26 +67,33 @@ extract_binary_file(char const* directory, uint32_t const file_size,
     // Format the output filename and write the file.
     snprintf(filename, sizeof filename, "%s/%04zX%s", directory, index, BINARY_FILE_EXT);
 
-    uint8_t* buffer = malloc(file_size);
-    if (buffer == NULL) {
-        error->result = ZELDA64_MEMORY_ERROR;
-        return error->result;
-    }
+    if (file_size > 0) {
+        uint8_t* buffer = malloc(file_size);
+        if (buffer == NULL) {
+            error->result = ZELDA64_MEMORY_ERROR;
+            return error->result;
+        }
 
-    if (zelda64_read_file(buffer, file_size, rom, index, error) != file_size) {
-        fprintf(stderr, "extract: error: cannot read file %zu: %s\n",
-                index, zelda64_error_string(error));
+        if (zelda64_read_file(buffer, file_size, rom, index, error) != file_size) {
+            fprintf(stderr, "extract: error: cannot read file %zu: %s\n",
+                    index, zelda64_error_string(error));
+
+            free(buffer);
+            return error->result;
+        }
+
+        if (write_file(filename, buffer, file_size, error) != ZELDA64_OK) {
+            free(buffer);
+            return error->result;
+        }
 
         free(buffer);
-        return error->result;
+    } else {
+        if (write_file(filename, NULL, 0, error) != ZELDA64_OK) {
+            return error->result;
+        }
     }
 
-    if (write_file(filename, buffer, file_size, error) != ZELDA64_OK) {
-        free(buffer);
-        return error->result;
-    }
-
-    free(buffer);
     return ZELDA64_OK;
 }
 
