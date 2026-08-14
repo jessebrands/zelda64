@@ -90,32 +90,62 @@ struct zelda64_stat {
     enum zelda64_entry_kind kind;
 };
 
+/*
+ * Returns the default memory allocator.
+ */
 ZELDA64_API struct zelda64_allocator
 zelda64_default_allocator(void);
 
+/*
+ * Opens a Nintendo 64 Zelda ROM.
+ */
 ZELDA64_API struct zelda64_rom*
 zelda64_open(char const* filename, struct zelda64_error* error);
 
+
+/*
+ * Opens a Nintendo 64 Zelda ROM. An allocator must be supplied by the caller
+ * which the library will use for memory allocations.
+ */
 ZELDA64_API struct zelda64_rom*
 zelda64_open_with_allocator(char const* filename, struct zelda64_allocator allocator, struct zelda64_error* error);
 
+/*
+ * Closes a Nintendo 64 Zelda ROM and releases all associated resources.
+ */
 ZELDA64_API void
 zelda64_close(struct zelda64_rom* rom);
 
+/*
+ * Returns information about a file in a ROM.
+ */
 ZELDA64_API enum zelda64_result
 zelda64_stat(struct zelda64_stat* st,
              struct zelda64_rom const* rom, size_t index,
              struct zelda64_error* error);
 
-ZELDA64_API size_t
-zelda64_dmadata_entries_count(struct zelda64_rom const* rom);
 
+/*
+ * Returns how many files are in a ROM.
+ */
+ZELDA64_API size_t
+zelda64_file_count(struct zelda64_rom const* rom);
+
+/*
+ * Returns a human-readable string for an error.
+ */
 ZELDA64_API char const*
 zelda64_error_string(struct zelda64_error const* error);
 
+/*
+ * Returns a packed integer representing the library version.
+ */
 ZELDA64_API int
 zelda64_version(void);
 
+/*
+ * Returns the library version as a string.
+ */
 ZELDA64_API char const*
 zelda64_version_string(void);
 

@@ -43,40 +43,8 @@ int main(int argc, char** argv) {
         error_with_code(&error, "could not open ROM", "open-failed");
     }
 
-    size_t const count = zelda64_dmadata_entries_count(rom);
+    size_t const count = zelda64_file_count(rom);
     printf("DMADATA has %zu entries\n\n", count);
-
-
-    printf("      %10s  %10s  %12s\n", "filename", "location", "size");
-    for (size_t i = 0; i < count; ++i) {
-        struct zelda64_stat st;
-        enum zelda64_result const result = zelda64_stat(&st, rom, i, &error);
-        if (result != ZELDA64_OK) {
-            error_with_code(&error, "could not read ROM file", "read-failed");
-        }
-
-        switch (st.kind) {
-            case ZELDA64_ENTRY_DELETED: {
-                printf("%04zX  %10s  %10s  %s\n", i, "<deleted>", "--", "    -.--    ");
-                break;
-            }
-
-            case ZELDA64_ENTRY_EMPTY:
-            case ZELDA64_ENTRY_STORED: {
-                char filename[12];
-                snprintf(filename, sizeof filename, "%04zX.bin", i);
-                printf("%04zX  %10s  0x%08X  %8.2f KiB\n", i, filename, st.offset, (double) st.size / 1024.0);
-                break;
-            }
-
-            case ZELDA64_ENTRY_COMPRESSED: {
-                char filename[12];
-                snprintf(filename, sizeof filename, "%04zX.szs", i);
-                printf("%04zX  %10s  0x%08X  %8.2f KiB\n", i, filename, st.offset, (double) st.size / 1024.0);
-                break;
-            }
-        }
-    }
 
     zelda64_close(rom);
     return EXIT_SUCCESS;

@@ -222,7 +222,7 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
 }
 
 size_t
-zelda64_dmadata_entries_count(struct zelda64_rom const* rom) {
+zelda64_file_count(struct zelda64_rom const* rom) {
     assert(rom != NULL);
     return rom->dmadata_info.count;
 }
