@@ -42,9 +42,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-
-
-
 #endif
 
 typedef size_t zelda64_index_t;
@@ -111,7 +108,6 @@ zelda64_default_allocator(void);
 ZELDA64_API struct zelda64_rom*
 zelda64_open(char const* filename, struct zelda64_error* error);
 
-
 /*
  * Opens a Nintendo 64 Zelda ROM. An allocator must be supplied by the caller
  * which the library will use for memory allocations.
@@ -170,7 +166,9 @@ zelda64_read_file(void* buffer, size_t size,
                   struct zelda64_rom const* rom, zelda64_index_t index,
                   struct zelda64_error* error);
 
-
+/*
+ * Returns the size of the ROM in bytes.
+ */
 ZELDA64_API zelda64_ssize_t
 zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error);
 
