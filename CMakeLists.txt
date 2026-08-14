@@ -98,4 +98,13 @@ if (ZELDA64_BUILD_UTILITIES AND ZELDA64_BUILD_SHARED)
 
     target_compile_features(decompress PRIVATE c_std_99)
     target_compile_options(decompress PRIVATE ${ZELDA64_WARNING_FLAGS})
+
+    add_executable(extract
+            src/extract.c)
+
+    target_link_libraries(extract
+            PRIVATE zelda64::zelda64)
+
+    target_compile_features(extract PRIVATE c_std_99)
+    target_compile_options(extract PRIVATE ${ZELDA64_WARNING_FLAGS})
 endif ()
