@@ -65,6 +65,13 @@ enum zelda64_method {
     ZELDA64_METHOD_YAZ0 = 1,
 };
 
+enum zelda64_operation {
+    ZELDA64_OP_COPY = 0,
+    ZELDA64_OP_COMPRESS = 1,
+    ZELDA64_OP_DECOMPRESS = 2,
+    ZELDA64_OP_DELETE = 3,
+};
+
 typedef void* (zelda64_alloc_func)(void* opaque, size_t size);
 
 typedef void (zelda64_free_func)(void* opaque, void* ptr);
@@ -95,6 +102,11 @@ struct zelda64_stat {
     uint32_t size; // Size of the file on the ROM
     uint32_t file_size; // Real size of the file
 };
+
+/*
+ * Describes the layout of a Nintendo 64 Zelda ROM.
+ */
+struct zelda64_dmadata_layout;
 
 /*
  * Returns the default memory allocator.
@@ -171,6 +183,23 @@ zelda64_read_file(void* buffer, size_t size,
  */
 ZELDA64_API zelda64_ssize_t
 zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error);
+
+/*
+ * Creates a decompressed layout from a ROM. Uses ROM's allocator.
+ */
+ZELDA64_API struct zelda64_dmadata_layout*
+zelda64_decompress(struct zelda64_rom const* rom, struct zelda64_error* error);
+
+/*
+ * Creates a decompressed layout from a ROM.
+ */
+ZELDA64_API struct zelda64_dmadata_layout*
+zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
+                                  struct zelda64_allocator allocator,
+                                  struct zelda64_error* error);
+
+ZELDA64_API void
+zelda64_free_layout(struct zelda64_dmadata_layout* layout);
 
 /*
  * Returns a human-readable string for an error.
