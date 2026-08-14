@@ -18,6 +18,11 @@ set(CMAKE_C_EXTENSIONS OFF)
 option(ZELDA64_BUILD_SHARED "Enable building libzelda64 as shared library" ON)
 option(ZELDA64_BUILD_UTILITIES "Enable building utilities" ${PROJECT_IS_TOP_LEVEL})
 
+#
+# Dependencies
+#
+find_package(yaz0 1.0 REQUIRED)
+
 configure_file(
         include/zelda64/config.h.in
         ${CMAKE_CURRENT_BINARY_DIR}/include/zelda64/config.h
@@ -68,6 +73,9 @@ if (ZELDA64_BUILD_SHARED)
             PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+
+    target_link_libraries(libzelda64_shared
+            PRIVATE yaz0::yaz0)
 
     set_target_properties(libzelda64_shared PROPERTIES
             OUTPUT_NAME "zelda64"
