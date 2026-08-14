@@ -29,11 +29,11 @@
 #define CHUNK_SIZE 1024
 #define READ_COUNT 128
 
-static struct zelda64_dma_entry
+static struct zelda64_dmadata
 read_entry_unsafe(uint8_t const* data) {
     assert(data != NULL);
 
-    return (struct zelda64_dma_entry){
+    return (struct zelda64_dmadata){
         .vrom_start = zelda64_read_u32(&data[0]),
         .vrom_end = zelda64_read_u32(&data[4]),
         .rom_start = zelda64_read_u32(&data[8]),
@@ -42,15 +42,15 @@ read_entry_unsafe(uint8_t const* data) {
 }
 
 static bool
-can_be_makerom(struct zelda64_dma_entry const entry) {
+can_be_makerom(struct zelda64_dmadata const entry) {
     return entry.vrom_start == 0 && entry.vrom_end != 0
            && entry.rom_start == 0 && entry.rom_end == 0;
 }
 
 static bool
-is_dmadata(struct zelda64_dma_entry const e0,
-           struct zelda64_dma_entry const e1,
-           struct zelda64_dma_entry const e2,
+is_dmadata(struct zelda64_dmadata const e0,
+           struct zelda64_dmadata const e1,
+           struct zelda64_dmadata const e2,
            uint32_t const candidate, uint32_t const rom_size) {
     /*
      * In short, we're looking for a certain signature.
@@ -132,7 +132,7 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
 
         // Check every 16 bytes for potential MAKEROM entries.
         for (uint32_t i = 0; i + ZELDA64_DMA_ENTRY_SIZE <= want; i += ZELDA64_DMA_ENTRY_SIZE) {
-            struct zelda64_dma_entry const e0 = read_entry_unsafe(&chunk[i]);
+            struct zelda64_dmadata const e0 = read_entry_unsafe(&chunk[i]);
             if (!can_be_makerom(e0)) {
                 continue;
             }
@@ -156,8 +156,8 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
                 return error->result;
             }
 
-            struct zelda64_dma_entry const e1 = read_entry_unsafe(&entry_buffer[0]);
-            struct zelda64_dma_entry const e2 = read_entry_unsafe(&entry_buffer[ZELDA64_DMA_ENTRY_SIZE]);
+            struct zelda64_dmadata const e1 = read_entry_unsafe(&entry_buffer[0]);
+            struct zelda64_dmadata const e2 = read_entry_unsafe(&entry_buffer[ZELDA64_DMA_ENTRY_SIZE]);
             if (!is_dmadata(e0, e1, e2, candidate, rom_size)) {
                 continue;
             }
@@ -193,7 +193,7 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
     }
 
     // Allocate memory for our entries.
-    struct zelda64_dma_entry* entries = zelda64_alloc(rom->allocator, info.count * sizeof *entries);
+    struct zelda64_dmadata* entries = zelda64_alloc(rom->allocator, info.count * sizeof *entries);
     if (entries == NULL) {
         return zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
     }

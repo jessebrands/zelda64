@@ -22,7 +22,7 @@
 #include "zelda64/zelda64.h"
 
 static enum zelda64_entry_kind
-zelda64_dma_entry_kind(struct zelda64_dma_entry const* entry) {
+zelda64_dma_entry_kind(struct zelda64_dmadata const* entry) {
     assert(entry != NULL);
 
     if (entry->vrom_end == entry->vrom_start) {
@@ -38,7 +38,7 @@ zelda64_dma_entry_kind(struct zelda64_dma_entry const* entry) {
 }
 
 static enum zelda64_result
-zelda64_dma_entry_extent(struct zelda64_dma_entry const* entry,
+zelda64_dma_entry_extent(struct zelda64_dmadata const* entry,
                          uint32_t* offset, uint32_t* size,
                          struct zelda64_error* error) {
     if (entry == NULL || offset == NULL || size == NULL) {
@@ -90,7 +90,7 @@ zelda64_stat(struct zelda64_stat* st,
         return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
     }
 
-    struct zelda64_dma_entry const* entry = &rom->dmadata[index];
+    struct zelda64_dmadata const* entry = &rom->dmadata[index];
     enum zelda64_entry_kind const kind = zelda64_dma_entry_kind(entry);
 
     uint32_t offset = 0;
