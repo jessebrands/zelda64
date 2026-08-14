@@ -19,6 +19,7 @@
  */
 
 #include <string.h>
+#include <yaz0/yaz0.h>
 
 #include "error.h"
 
@@ -33,6 +34,7 @@ zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_ERRNO: return "system error";
         case ZELDA64_NO_DMADATA: return "no DMADATA";
         case ZELDA64_DELETED: return "deleted";
+        case ZELDA64_DECOMPRESS_ERROR: return "decompression failed";
     }
     return "unknown";
 }
@@ -45,6 +47,9 @@ zelda64_error_string(struct zelda64_error const* error) {
 
     if (error->result == ZELDA64_ERRNO) {
         return strerror(error->sys_error);
+    }
+    if (error->result == ZELDA64_DECOMPRESS_ERROR) {
+        return yaz0_result_string(error->sys_error);
     }
 
     // No system error, so just get our own result.
