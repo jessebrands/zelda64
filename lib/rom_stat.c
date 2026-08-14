@@ -126,7 +126,7 @@ zelda64_stat(struct zelda64_stat* st,
         // Sadly, libyaz0 forgot to export the header size in bytes.
         // But a header struct is always at least as big!
         uint8_t header_bytes[sizeof(struct yaz0_header)];
-        if (zelda64_source_read(&rom->source, header_bytes, sizeof header_bytes, offset, error) < 0) {
+        if (zelda64_source_read_exact(&rom->source, header_bytes, sizeof header_bytes, offset, error) < 0) {
             return error->result;
         }
 
