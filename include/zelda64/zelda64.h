@@ -58,6 +58,7 @@ enum zelda64_result {
     ZELDA64_NO_DMADATA = -6,
     ZELDA64_DELETED = -7,
     ZELDA64_DECOMPRESS_ERROR = -8,
+    ZELDA64_COMPRESS_ERROR = -9,
 };
 
 enum zelda64_method {
