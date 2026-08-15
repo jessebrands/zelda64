@@ -45,4 +45,9 @@ zelda64_write_u32(uint8_t* p, uint32_t const n) {
     p[3] = (uint8_t) (n);
 }
 
+static inline uint32_t
+zelda64_rot32(uint32_t const a, unsigned const b) {
+    return a << b | a >> ((32 - b) & 31);
+}
+
 #endif //LIBZELDA64_BYTES_H

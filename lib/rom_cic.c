@@ -18,6 +18,7 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "bytes.h"
 #include "crc32c.h"
 #include "rom.h"
 
@@ -26,6 +27,8 @@
 #define IPL3_CHECKSUM_END     0x1000
 #define IPL3_CHECKSUM_SIZE    (IPL3_CHECKSUM_END - IPL3_CHECKSUM_START)
 #define IPL3_CHECKSUM_6105    0x5FFC15B9
+
+#define CHECK_CODE_SEED_6105  0xDF26F436
 
 enum zelda64_cic
 zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
@@ -78,4 +81,103 @@ zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
             zelda64_set_error(error, ZELDA64_UNSUPPORTED_CIC);
             return ZELDA64_CIC_UNKNOWN;
     }
+}
+
+struct check_code_state {
+    uint32_t acc[6];
+    size_t offset;
+    uint8_t const* ipl;
+    size_t ipl_size;
+};
+
+static uint32_t
+check_code_seed(enum zelda64_cic const cic, struct zelda64_error* error) {
+    switch (cic) {
+        case ZELDA64_CIC_6105:
+            return CHECK_CODE_SEED_6105;
+
+        case ZELDA64_CIC_UNKNOWN:
+            break;
+    }
+
+    zelda64_set_error(error, ZELDA64_UNSUPPORTED_CIC);
+    return 0;
+}
+
+static enum zelda64_result
+check_code_init(enum zelda64_cic const cic,
+                uint8_t const* ipl, size_t const ipl_size,
+                struct check_code_state* state,
+                struct zelda64_error* error) {
+    if (state == NULL || ipl == NULL) {
+        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+    }
+    if (ipl_size < 0x0810) {
+        return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+    }
+
+    // Get initial seed for the CIC-NUS chip.
+    uint32_t const seed = check_code_seed(cic, error);
+    if (seed == 0) {
+        return error->result;
+    }
+
+    *state = (struct check_code_state){
+        .acc = {seed, seed, seed, seed, seed, seed},
+        .offset = 0x1000,
+        .ipl = ipl,
+        .ipl_size = ipl_size
+    };
+
+    return ZELDA64_OK;
+}
+
+static enum zelda64_result
+check_code(struct check_code_state* state,
+                   uint8_t const* data, size_t const size,
+                   struct zelda64_error* error) {
+    // If our arguments don't make sense, bail.
+    if (state == NULL || data == NULL || size % 4 != 0 || state->ipl == NULL) {
+        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+    }
+    if (state->ipl_size < 0x0810) {
+        return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+    }
+
+    size_t const start = state->offset;
+    size_t i = 0; // Position in current data buffer.
+    while (state->offset < 0x101000 && i + 4 <= size) {
+        uint32_t const d = zelda64_read_u32(&data[i]);
+
+        if (state->acc[5] + d < state->acc[5]) {
+            state->acc[3]++;
+        }
+
+        state->acc[5] += d;
+        state->acc[2] ^= d;
+
+        uint32_t const r = zelda64_rot32(d, (d & 0x1F));
+        state->acc[4] += r;
+
+        if (state->acc[1] > d) {
+            state->acc[1] ^= r;
+        } else {
+            state->acc[1] ^= state->acc[5] ^ d;
+        }
+
+        size_t const makerom_offset = 0x0710 + ((start + i) & 0xFF);
+        uint32_t const b = zelda64_read_u32(&state->ipl[makerom_offset]);
+        state->acc[0] += b ^ d;
+
+        i += 4;
+        state->offset += 4;
+    }
+
+    return ZELDA64_OK;
+}
+
+static uint64_t
+cic_check_code_end(struct check_code_state const* state) {
+    return ((uint64_t) (state->acc[5] ^ state->acc[3] ^ state->acc[2]) << 32)
+           | ((uint64_t) (state->acc[4] ^ state->acc[1] ^ state->acc[0]));
 }
