@@ -59,6 +59,13 @@ enum zelda64_result {
     ZELDA64_DELETED = -7,
     ZELDA64_DECOMPRESS_ERROR = -8,
     ZELDA64_COMPRESS_ERROR = -9,
+    ZELDA64_INVALID_ROM = -10,
+    ZELDA64_UNSUPPORTED_CIC = -11,
+};
+
+enum zelda64_cic {
+    ZELDA64_CIC_UNKNOWN = 0,
+    ZELDA64_CIC_6105 = 6105,
 };
 
 enum zelda64_method {

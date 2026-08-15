@@ -45,6 +45,7 @@ struct zelda64_rom {
 
     struct zelda64_dmadata_info dmadata_info;
     struct zelda64_dmadata* dmadata;
+    enum zelda64_cic cic;
 };
 
 enum zelda64_dmadata_kind
@@ -53,5 +54,9 @@ zelda64_dmadata_kind(struct zelda64_dmadata const* entry);
 enum zelda64_result
 zelda64_read_dmadata(struct zelda64_rom* rom,
                      struct zelda64_error* error);
+
+enum zelda64_cic
+zelda64_detect_cic(struct zelda64_rom const* rom,
+                   struct zelda64_error* error);
 
 #endif //LIBZELDA64_ROM_H

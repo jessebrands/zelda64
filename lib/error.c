@@ -34,9 +34,10 @@ zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_ERRNO: return "system error";
         case ZELDA64_NO_DMADATA: return "no DMADATA";
         case ZELDA64_DELETED: return "deleted";
-        case ZELDA64_DECOMPRESS_ERROR: return "decompression failed";
         case ZELDA64_DECOMPRESS_ERROR: return "decompression error";
         case ZELDA64_COMPRESS_ERROR: return "compression error";
+        case ZELDA64_INVALID_ROM: return "invalid ROM";
+        case ZELDA64_UNSUPPORTED_CIC: return "unknown CIC";
     }
     return "unknown";
 }

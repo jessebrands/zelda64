@@ -73,6 +73,13 @@ zelda64_open_with_allocator(char const* filename,
         return NULL;
     }
 
+    // Detect the CIC chip for this ROM.
+    rom->cic = zelda64_detect_cic(rom, error);
+    if (rom->cic == ZELDA64_CIC_UNKNOWN) {
+        zelda64_close(rom);
+        return NULL;
+    }
+
     return rom;
 }
 
