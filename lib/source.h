@@ -22,6 +22,7 @@
 #define LIBZELDA64_SOURCE_H
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include "zelda64/zelda64.h"
@@ -116,6 +117,12 @@ zelda64_source_close(struct zelda64_source* source, struct zelda64_allocator con
 int
 zelda64_source_file_open(struct zelda64_source* source,
                          char const* filename,
+                         struct zelda64_allocator allocator,
+                         struct zelda64_error* error);
+
+enum zelda64_result
+zelda64_source_file_from(struct zelda64_source* source,
+                         FILE* handle,
                          struct zelda64_allocator allocator,
                          struct zelda64_error* error);
 

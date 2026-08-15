@@ -40,6 +40,9 @@ zelda64_source_file_size(void* opaque, struct zelda64_error* error);
 static void
 zelda64_source_file_close(void* opaque, struct zelda64_allocator allocator);
 
+static void
+zelda64_source_file_close_non_owning(void* opaque, struct zelda64_allocator allocator);
+
 int
 zelda64_source_file_open(struct zelda64_source* source,
                          char const* filename,
@@ -70,6 +73,33 @@ zelda64_source_file_open(struct zelda64_source* source,
         .close = zelda64_source_file_close,
         .opaque = file
     };
+    return ZELDA64_OK;
+}
+
+enum zelda64_result
+zelda64_source_file_from(struct zelda64_source* source,
+                         FILE* handle,
+                         struct zelda64_allocator const allocator,
+                         struct zelda64_error* error) {
+    if (source == NULL || handle == NULL) {
+        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+    }
+
+    // Allocate the file state struct.
+    struct zelda64_source_file* file = zelda64_alloc(allocator, sizeof *file);
+    if (file == NULL) {
+        return zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
+    }
+
+    file->handle = handle;
+
+    *source = (struct zelda64_source){
+        .read = zelda64_source_file_read,
+        .size = zelda64_source_file_size,
+        .close = zelda64_source_file_close_non_owning,
+        .opaque = file,
+    };
+
     return ZELDA64_OK;
 }
 
@@ -136,5 +166,11 @@ static void
 zelda64_source_file_close(void* opaque, struct zelda64_allocator allocator) {
     struct zelda64_source_file* file = opaque;
     fclose(file->handle);
+    zelda64_free(allocator, file);
+}
+
+static void
+zelda64_source_file_close_non_owning(void* opaque, struct zelda64_allocator const allocator) {
+    struct zelda64_source_file* file = opaque;
     zelda64_free(allocator, file);
 }
