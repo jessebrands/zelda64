@@ -208,6 +208,14 @@ zelda64_read_file(void* buffer, size_t size,
 ZELDA64_API zelda64_ssize_t
 zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error);
 
+ZELDA64_API struct zelda64_dmadata_layout*
+zelda64_compress(struct zelda64_rom const* rom, struct zelda64_error* error);
+
+ZELDA64_API struct zelda64_dmadata_layout*
+zelda64_compress_with_allocator(struct zelda64_rom const* rom,
+                                struct zelda64_allocator allocator,
+                                struct zelda64_error* error);
+
 /*
  * Creates a decompressed layout from a ROM. Uses ROM's allocator.
  */
