@@ -47,6 +47,7 @@ set(LIBZELDA64_PUBLIC_HEADERS
 set(LIBZELDA64_PRIVATE_HEADERS
         lib/allocator.h
         lib/bytes.h
+        lib/crc32c.h
         lib/error.h
         lib/layout.h
         lib/rom.h
@@ -54,6 +55,7 @@ set(LIBZELDA64_PRIVATE_HEADERS
 
 set(LIBZELDA64_SOURCES
         lib/allocator.c
+        lib/crc32c.c
         lib/error.c
         lib/layout_free.c
         lib/layout_write.c
