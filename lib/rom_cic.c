@@ -22,13 +22,60 @@
 #include "crc32c.h"
 #include "rom.h"
 
-#define MAKEROM_ENTRY         0x0000
-#define IPL3_CHECKSUM_START   0x40
-#define IPL3_CHECKSUM_END     0x1000
-#define IPL3_CHECKSUM_SIZE    (IPL3_CHECKSUM_END - IPL3_CHECKSUM_START)
-#define IPL3_CHECKSUM_6105    0x5FFC15B9
+#define MAKEROM_ENTRY            0x0000
+#define IPL3_BOOTCODE_START      0x40
 
-#define CHECK_CODE_SEED_6105  0xDF26F436
+#define IPL3_CHECKSUM_END        0x1000
+#define IPL3_CHECKSUM_SIZE       (IPL3_CHECKSUM_END - IPL3_BOOTCODE_START)
+#define IPL3_CHECKSUM_6105       0x5FFC15B9
+
+#define CHECK_CODE_CHUNK         1024
+#define CHECK_CODE_START         0x1000
+#define CHECK_CODE_END           0x101000
+#define CHECK_CODE_IPL3_END      0x850
+#define CHECK_CODE_IPL3_SIZE     (CHECK_CODE_IPL3_END - IPL3_BOOTCODE_START)
+#define CHECK_CODE_SEED_6105     0xDF26F436
+
+static zelda64_ssize_t
+read_ipl3_bootcode(uint8_t* buffer, size_t const size,
+                   struct zelda64_source const* source,
+                   struct zelda64_dmadata const* dmadata,
+                   size_t const dmadata_count,
+                   struct zelda64_error* error) {
+    assert(buffer != NULL);
+    assert(source != NULL);
+    assert(dmadata != NULL);
+    assert(dmadata_count > 0);
+
+    struct zelda64_dmadata const* e_makerom = &dmadata[MAKEROM_ENTRY];
+
+    // If this entry is too small, then this is not a valid ROM.
+    if (e_makerom->vrom_end - e_makerom->vrom_start < IPL3_CHECKSUM_END) {
+        zelda64_set_error(error, ZELDA64_INVALID_ROM);
+        return -1;
+    }
+
+    return zelda64_source_read_exact(
+        source,
+        buffer, size,
+        IPL3_BOOTCODE_START,
+        error
+    );
+}
+
+static enum zelda64_cic
+detect_cic(uint8_t const* ipl3_bootcode, size_t const size) {
+    uint32_t const ipl3_checksum = zelda64_crc32c(0, ipl3_bootcode, size);
+
+    // And match it to a known CIC checksum.
+    switch (ipl3_checksum) {
+        case IPL3_CHECKSUM_6105:
+            return ZELDA64_CIC_6105;
+
+        default:
+            return ZELDA64_CIC_UNKNOWN;
+    }
+}
 
 enum zelda64_cic
 zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
@@ -44,43 +91,26 @@ zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
     //
     // For our purposes, we are only interested in CIC-NUS-6105, given that we
     // are a Nintendo 64 Zelda ROM library. :-)
-    struct zelda64_dmadata const* e_makerom = &rom->dmadata[MAKEROM_ENTRY];
-
-    // If this entry is too small, then this is not a valid ROM.
-    if (e_makerom->vrom_end - e_makerom->vrom_start < IPL3_CHECKSUM_END) {
-        zelda64_set_error(error, ZELDA64_INVALID_ROM);
-        return ZELDA64_CIC_UNKNOWN;
-    }
-
-    // Read the section of the bootcode we care about into memory.
     uint8_t ipl3_bootcode[IPL3_CHECKSUM_SIZE];
-    zelda64_ssize_t const bytes_in = zelda64_read_storage(
-        ipl3_bootcode, IPL3_CHECKSUM_SIZE,
-        rom, MAKEROM_ENTRY,
-        IPL3_CHECKSUM_START,
+
+    zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
+        ipl3_bootcode, sizeof ipl3_bootcode,
+        &rom->source,
+        rom->dmadata,
+        rom->dmadata_info.count,
         error
     );
 
     if (bytes_in < 0) {
         return ZELDA64_CIC_UNKNOWN;
     }
-    if (bytes_in != IPL3_CHECKSUM_SIZE) {
-        zelda64_set_error(error, ZELDA64_TRUNCATED);
-        return ZELDA64_CIC_UNKNOWN;
+
+    enum zelda64_cic const cic = detect_cic(ipl3_bootcode, sizeof ipl3_bootcode);
+    if (cic == ZELDA64_CIC_UNKNOWN) {
+        zelda64_set_error(error, ZELDA64_UNSUPPORTED_CIC);
     }
 
-    // Calculate the CRC-32C of this region.
-    uint32_t const ipl3_checksum = zelda64_crc32c(0, ipl3_bootcode, sizeof ipl3_bootcode);
-
-    // And match it to a known CIC checksum.
-    switch (ipl3_checksum) {
-        case IPL3_CHECKSUM_6105:
-            return ZELDA64_CIC_6105;
-
-        default:
-            zelda64_set_error(error, ZELDA64_UNSUPPORTED_CIC);
-            return ZELDA64_CIC_UNKNOWN;
-    }
+    return cic;
 }
 
 struct check_code_state {
@@ -112,7 +142,7 @@ check_code_init(enum zelda64_cic const cic,
     if (state == NULL || ipl == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
-    if (ipl_size < 0x0810) {
+    if (ipl_size < CHECK_CODE_IPL3_SIZE) {
         return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
     }
 
@@ -124,7 +154,7 @@ check_code_init(enum zelda64_cic const cic,
 
     *state = (struct check_code_state){
         .acc = {seed, seed, seed, seed, seed, seed},
-        .offset = 0x1000,
+        .offset = CHECK_CODE_START,
         .ipl = ipl,
         .ipl_size = ipl_size
     };
@@ -134,19 +164,19 @@ check_code_init(enum zelda64_cic const cic,
 
 static enum zelda64_result
 check_code(struct check_code_state* state,
-                   uint8_t const* data, size_t const size,
-                   struct zelda64_error* error) {
+           uint8_t const* data, size_t const size,
+           struct zelda64_error* error) {
     // If our arguments don't make sense, bail.
     if (state == NULL || data == NULL || size % 4 != 0 || state->ipl == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
-    if (state->ipl_size < 0x0810) {
+    if (state->ipl_size < CHECK_CODE_IPL3_SIZE) {
         return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
     }
 
     size_t const start = state->offset;
     size_t i = 0; // Position in current data buffer.
-    while (state->offset < 0x101000 && i + 4 <= size) {
+    while (state->offset < CHECK_CODE_END && i + 4 <= size) {
         uint32_t const d = zelda64_read_u32(&data[i]);
 
         if (state->acc[5] + d < state->acc[5]) {
@@ -180,4 +210,62 @@ static uint64_t
 cic_check_code_end(struct check_code_state const* state) {
     return ((uint64_t) (state->acc[5] ^ state->acc[3] ^ state->acc[2]) << 32)
            | ((uint64_t) (state->acc[4] ^ state->acc[1] ^ state->acc[0]));
+}
+
+uint64_t
+zelda64_calculate_check_code(struct zelda64_source const* source,
+                             struct zelda64_dmadata const* dmadata,
+                             size_t const dmadata_count,
+                             struct zelda64_error* error) {
+    if (source == NULL || dmadata == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return 0;
+    }
+    if (dmadata_count == 0) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return 0;
+    }
+
+    uint8_t ipl3_bootcode[IPL3_CHECKSUM_SIZE];
+
+    // To calculate this, we'll need the IPL3 bootcode.
+    zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
+        ipl3_bootcode, sizeof ipl3_bootcode,
+        source,
+        dmadata, dmadata_count,
+        error
+    );
+
+    if (bytes_in < 0) {
+        return 0;
+    }
+
+    // What is the CIC of this ROM?
+    enum zelda64_cic const cic = detect_cic(ipl3_bootcode, sizeof ipl3_bootcode);
+    if (cic != ZELDA64_CIC_6105) {
+        zelda64_set_error(error, ZELDA64_UNSUPPORTED_CIC);
+        return 0;
+    }
+
+    // Initialize the check code state.
+    struct check_code_state state;
+    check_code_init(cic, ipl3_bootcode, sizeof ipl3_bootcode, &state, error);
+
+    // Calculate the check code.
+    uint8_t chunk[CHECK_CODE_CHUNK];
+    zelda64_offset_t offset = CHECK_CODE_START;
+    while (offset < CHECK_CODE_END) {
+        size_t const remaining = CHECK_CODE_END - offset;
+        size_t const want = remaining < sizeof chunk ? remaining : sizeof chunk;
+        if (zelda64_source_read_exact(source, chunk, want, offset, error) < 0) {
+            return 0;
+        }
+        if (check_code(&state, chunk, want, error) != ZELDA64_OK) {
+            return 0;
+        }
+        offset += want;
+    }
+
+    // Mix the check code and return the result.
+    return cic_check_code_end(&state);
 }

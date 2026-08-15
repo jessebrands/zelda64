@@ -59,4 +59,10 @@ enum zelda64_cic
 zelda64_detect_cic(struct zelda64_rom const* rom,
                    struct zelda64_error* error);
 
+uint64_t
+zelda64_calculate_check_code(struct zelda64_source const* source,
+                             struct zelda64_dmadata const* dmadata,
+                             size_t dmadata_count,
+                             struct zelda64_error* error);
+
 #endif //LIBZELDA64_ROM_H
