@@ -18,6 +18,7 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <zelda64/zelda64.h>
