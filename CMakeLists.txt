@@ -99,6 +99,15 @@ if (ZELDA64_BUILD_SHARED)
 endif ()
 
 if (ZELDA64_BUILD_UTILITIES AND ZELDA64_BUILD_SHARED)
+    add_executable(compress
+            src/compress.c)
+
+    target_link_libraries(compress
+            PRIVATE zelda64::zelda64)
+
+    target_compile_features(compress PRIVATE c_std_99)
+    target_compile_options(compress PRIVATE ${ZELDA64_WARNING_FLAGS})
+
     add_executable(decompress
             src/decompress.c)
 
