@@ -241,11 +241,19 @@ zelda64_write(char const* filename,
     }
 
     // Create our new ROM.
-    FILE* file = fopen(filename, "wb");
+    FILE* file = fopen(filename, "w+b");
     if (file == NULL) {
         zelda64_set_errno(error);
         zelda64_free(layout->allocator, dmadata);
         return ZELDA64_ERRNO;
+    }
+
+    // Open this read-only source over the ROM for later.
+    struct zelda64_source out_rom;
+    if (zelda64_source_file_from(&out_rom, file, layout->allocator, error) != ZELDA64_OK) {
+        fclose(file);
+        zelda64_free(layout->allocator, dmadata);
+        return error->result;
     }
 
     // Enter the writing loop, this is where things get complex.
@@ -317,9 +325,15 @@ zelda64_write(char const* filename,
         return error->result;
     }
 
-    // TODO: Need DMADATA writing function. :o
+    // Calculate the ROM check code.
+    uint64_t const check_code = zelda64_calculate_check_code(&out_rom, dmadata, count, error);
 
-    // TODO: Calculate the ROM check code.
+    uint8_t check_code_buffer[8];
+    zelda64_write_u64(check_code_buffer, check_code);
+
+    // And write it to the ROM.
+    fseek(file, 0x10, SEEK_SET);
+    fwrite(check_code_buffer, sizeof check_code_buffer[0], sizeof check_code_buffer, file);
 
     // We're done, clean up!
     zelda64_free(layout->allocator, dmadata);

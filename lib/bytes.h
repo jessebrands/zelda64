@@ -45,6 +45,20 @@ zelda64_write_u32(uint8_t* p, uint32_t const n) {
     p[3] = (uint8_t) (n);
 }
 
+static inline void
+zelda64_write_u64(uint8_t* p, uint64_t const n) {
+    assert(p != NULL);
+
+    p[0] = (uint8_t) (n >> 56);
+    p[1] = (uint8_t) (n >> 48);
+    p[2] = (uint8_t) (n >> 40);
+    p[3] = (uint8_t) (n >> 32);
+    p[4] = (uint8_t) (n >> 24);
+    p[5] = (uint8_t) (n >> 16);
+    p[6] = (uint8_t) (n >> 8);
+    p[7] = (uint8_t) (n);
+}
+
 static inline uint32_t
 zelda64_rot32(uint32_t const a, unsigned const b) {
     return a << b | a >> ((32 - b) & 31);
