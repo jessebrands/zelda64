@@ -89,6 +89,103 @@ copy_entry(FILE* file, uint32_t const position,
 }
 
 static zelda64_ssize_t
+compress_rom_file(FILE* file, uint32_t const position,
+                  struct zelda64_rom const* rom, zelda64_index_t const index,
+                  struct zelda64_allocator const allocator,
+                  struct zelda64_error* error) {
+    // Get information about this ROM file.
+    struct zelda64_stat st;
+    if (zelda64_stat(&st, rom, index, error) != ZELDA64_OK) {
+        return -1;
+    }
+
+    // Empty files are quick and easy, don't need to do anything for them.
+    if (st.file_size == 0) {
+        return 0;
+    }
+
+    // Set up the stream with our allocator.
+    struct yaz0_stream stream = {0};
+    stream.alloc = allocator.alloc;
+    stream.free = allocator.free;
+    stream.opaque = allocator.opaque;
+
+    // Initialize the stream for compression.
+    enum yaz0_result compress_result = yaz0_compress_init(&stream, YAZ0_DEFAULT_COMPRESSION, st.size);
+    if (compress_result != YAZ0_OK) {
+        zelda64_set_sys_error(error, ZELDA64_COMPRESS_ERROR, compress_result);
+        return -1;
+    }
+
+    // Seek to the write position that this file belongs to.
+    if (fseek(file, position, SEEK_SET) != 0) {
+        zelda64_set_errno(error);
+        yaz0_compress_end(&stream);
+        return -1;
+    }
+
+    uint8_t in_chunk[CHUNK_SIZE];
+    uint8_t out_chunk[CHUNK_SIZE];
+    uint32_t bytes_in = 0;
+    do {
+        // Read data from the ROM into our buffer.
+        uint32_t const available = st.size - bytes_in;
+        uint32_t const want = available < CHUNK_SIZE ? available : CHUNK_SIZE;
+        if (zelda64_read_storage(in_chunk, want, rom, index, bytes_in, error) < 0) {
+            yaz0_compress_end(&stream);
+            return -1;
+        }
+
+        stream.next_in = in_chunk;
+        stream.avail_in = want;
+        bytes_in += want;
+
+        enum yaz0_flush const flush = (bytes_in == st.size)
+                                          ? YAZ0_FINISH
+                                          : YAZ0_NO_FLUSH;
+
+        do {
+            stream.next_out = out_chunk;
+            stream.avail_out = sizeof out_chunk;
+
+            compress_result = yaz0_compress(&stream, flush);
+            if (compress_result < YAZ0_OK) {
+                zelda64_set_sys_error(error, ZELDA64_COMPRESS_ERROR, compress_result);
+                yaz0_compress_end(&stream);
+                return -1;
+            }
+
+            size_t const have = sizeof out_chunk - stream.avail_out;
+            if (fwrite(out_chunk, sizeof *out_chunk, have, file) != have) {
+                zelda64_set_errno(error);
+                yaz0_compress_end(&stream);
+                return -1;
+            }
+        } while (stream.avail_out == 0 && stream.avail_in != 0);
+    } while (compress_result != YAZ0_STREAM_END);
+
+    yaz0_compress_end(&stream);
+    return (zelda64_ssize_t) stream.total_out;
+}
+
+static zelda64_ssize_t
+compress_entry(FILE* file, uint32_t const position,
+               struct zelda64_layout_entry const* entry,
+               struct zelda64_allocator const allocator,
+               struct zelda64_error* error) {
+    switch (entry->from_type) {
+        case ZELDA64_FROM_ROM: {
+            struct zelda64_rom const* rom = entry->from.rom.rom;
+            zelda64_index_t const index = entry->from.rom.index;
+            return compress_rom_file(file, position, rom, index, allocator, error);
+        }
+    }
+
+    zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+    return -1;
+}
+
+static zelda64_ssize_t
 decompress_rom_file(FILE* file, uint32_t const position,
                     struct zelda64_rom const* rom, zelda64_index_t const index,
                     struct zelda64_allocator const allocator,
@@ -202,9 +299,9 @@ write_dmadata(FILE* file, uint32_t const position,
 
         for (size_t j = 0; j < have; ++j) {
             uint8_t* const p = &chunk[j * ZELDA64_DMA_ENTRY_SIZE];
-            zelda64_write_u32(&p[0],  dmadata[i + j].vrom_start);
-            zelda64_write_u32(&p[4],  dmadata[i + j].vrom_end);
-            zelda64_write_u32(&p[8],  dmadata[i + j].rom_start);
+            zelda64_write_u32(&p[0], dmadata[i + j].vrom_start);
+            zelda64_write_u32(&p[4], dmadata[i + j].vrom_end);
+            zelda64_write_u32(&p[8], dmadata[i + j].rom_start);
             zelda64_write_u32(&p[12], dmadata[i + j].rom_end);
         }
 
@@ -289,6 +386,10 @@ zelda64_write(char const* filename,
                 bytes_out = copy_entry(file, rom_start, entry, error);
                 break;
 
+            case ZELDA64_OP_COMPRESS:
+                bytes_out = compress_entry(file, rom_start, entry, layout->allocator, error);
+                break;
+
             case ZELDA64_OP_DECOMPRESS:
                 bytes_out = decompress_entry(file, rom_start, entry, layout->allocator, error);
                 break;
@@ -310,7 +411,7 @@ zelda64_write(char const* filename,
             .vrom_start = entry->vrom_start,
             .vrom_end = entry->vrom_end,
             .rom_start = rom_start,
-            .rom_end = 0,
+            .rom_end = (entry->operation == ZELDA64_OP_COMPRESS) ? rom_start + size : 0,
         };
 
         position = rom_start + size;
