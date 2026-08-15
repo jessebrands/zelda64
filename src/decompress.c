@@ -23,13 +23,6 @@
 
 #include <zelda64/zelda64.h>
 
-static void
-error_with_code(struct zelda64_error const* error, char const* what, char const* slug) {
-    fprintf(stderr, "error: %s: %s\n", what, zelda64_error_string(error));
-    fprintf(stderr, "exit %d (%s)\n", EXIT_FAILURE, slug);
-    exit(EXIT_FAILURE);
-}
-
 int main(int argc, char** argv) {
     if (argc != 3) {
         return EXIT_FAILURE;
@@ -40,12 +33,40 @@ int main(int argc, char** argv) {
     struct zelda64_error error;
     struct zelda64_rom* rom = zelda64_open(in_filename, &error);
     if (rom == NULL) {
-        error_with_code(&error, "could not open ROM", "open-failed");
+        fprintf(stderr,
+                "decompress: error: failed to open ROM: %s\n",
+                zelda64_error_string(&error));
+        return EXIT_FAILURE;
     }
 
-    size_t const count = zelda64_file_count(rom);
-    printf("DMADATA has %zu entries\n\n", count);
+    // Create a decompressed layout.
+    struct zelda64_dmadata_layout* layout = zelda64_decompress(rom, &error);
+    if (layout == NULL) {
+        fprintf(stderr,
+                "decompress: error: failed to create decompressed layout from ROM: %s\n",
+                zelda64_error_string(&error));
+        zelda64_close(rom);
+        return EXIT_FAILURE;
+    }
 
+    // This configuration creates a decompressed ROM compatible with the
+    // Ocarina of Time Randomizer. It hardcodes ROM offsets so we can't really
+    // go ahead and pack it more densely.
+    struct zelda64_write_options const options = {
+        .pack = ZELDA64_PACK_SPARSE,
+        .pad = ZELDA64_PAD_ZERO,
+    };
+
+    // Write the output ROM.
+    if (zelda64_write(argv[2], layout, &options, &error) != ZELDA64_OK) {
+        fprintf(stderr, "decompress: error: failed to write output ROM: %s\n",
+                zelda64_error_string(&error));
+        zelda64_free_layout(layout);
+        zelda64_close(rom);
+        return EXIT_FAILURE;
+    }
+
+    zelda64_free_layout(layout);
     zelda64_close(rom);
     return EXIT_SUCCESS;
 }
