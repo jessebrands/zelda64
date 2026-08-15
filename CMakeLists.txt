@@ -58,6 +58,7 @@ set(LIBZELDA64_SOURCES
         lib/crc32c.c
         lib/error.c
         lib/layout_free.c
+        lib/layout_operation.c
         lib/layout_write.c
         lib/rom_cic.c
         lib/rom_compress.c

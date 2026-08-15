@@ -233,6 +233,15 @@ zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
 ZELDA64_API void
 zelda64_free_layout(struct zelda64_dmadata_layout* layout);
 
+ZELDA64_API size_t
+zelda64_layout_count(struct zelda64_dmadata_layout const* layout,
+                     struct zelda64_error* error);
+
+ZELDA64_API void
+zelda64_layout_set_operation(struct zelda64_dmadata_layout* layout,
+                             zelda64_index_t index, enum zelda64_operation operation,
+                             struct zelda64_error* error);
+
 ZELDA64_API enum zelda64_result
 zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
