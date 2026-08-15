@@ -22,6 +22,7 @@
 #include <yaz0/yaz0.h>
 
 #include "allocator.h"
+#include "bytes.h"
 #include "error.h"
 #include "layout.h"
 #include "rom.h"
@@ -140,8 +141,8 @@ decompress_rom_file(FILE* file, uint32_t const position,
         bytes_in += want;
 
         enum yaz0_flush const flush = (bytes_in == st.size)
-                                  ? YAZ0_FINISH
-                                  : YAZ0_NO_FLUSH;
+                                          ? YAZ0_FINISH
+                                          : YAZ0_NO_FLUSH;
 
         do {
             stream.next_out = out_chunk;
@@ -182,6 +183,38 @@ decompress_entry(FILE* file, uint32_t const position,
 
     zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     return -1;
+}
+
+#define WRITE_COUNT 128
+
+static enum zelda64_result
+write_dmadata(FILE* file, uint32_t const position,
+              struct zelda64_dmadata const* dmadata, size_t const count,
+              struct zelda64_error* error) {
+    if (fseek(file, (long) position, SEEK_SET) != 0) {
+        return zelda64_set_errno(error);
+    }
+
+    uint8_t chunk[ZELDA64_DMA_ENTRY_SIZE * WRITE_COUNT];
+    for (size_t i = 0; i < count; i += WRITE_COUNT) {
+        size_t const remaining = count - i;
+        size_t const have = remaining < WRITE_COUNT ? remaining : WRITE_COUNT;
+
+        for (size_t j = 0; j < have; ++j) {
+            uint8_t* const p = &chunk[j * ZELDA64_DMA_ENTRY_SIZE];
+            zelda64_write_u32(&p[0],  dmadata[i + j].vrom_start);
+            zelda64_write_u32(&p[4],  dmadata[i + j].vrom_end);
+            zelda64_write_u32(&p[8],  dmadata[i + j].rom_start);
+            zelda64_write_u32(&p[12], dmadata[i + j].rom_end);
+        }
+
+        size_t const bytes = have * ZELDA64_DMA_ENTRY_SIZE;
+        if (fwrite(chunk, 1, bytes, file) != bytes) {
+            return zelda64_set_errno(error);
+        }
+    }
+
+    return ZELDA64_OK;
 }
 
 enum zelda64_result
@@ -278,7 +311,11 @@ zelda64_write(char const* filename,
     // Now we must write the DMADATA to the ROM.
     // The DMADATA is at entry 0x0002, so we need to fit exactly there.
     struct zelda64_dmadata const* e_dmadata = &dmadata[0x0002];
-    fseek(file, (long) e_dmadata->rom_start, SEEK_SET);
+    if (write_dmadata(file, e_dmadata->vrom_start, dmadata, count, error) != ZELDA64_OK) {
+        zelda64_free(layout->allocator, dmadata);
+        fclose(file);
+        return error->result;
+    }
 
     // TODO: Need DMADATA writing function. :o
 
