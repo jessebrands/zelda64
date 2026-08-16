@@ -12,10 +12,6 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-#
-# Library settings
-#
-option(ZELDA64_BUILD_SHARED "Enable building libzelda64 as shared library" ON)
 option(ZELDA64_BUILD_ZELDA64 "Enable building zelda64 program" ${PROJECT_IS_TOP_LEVEL})
 
 #
@@ -40,6 +36,9 @@ else ()
             -Wundef -Wvla -Wdouble-promotion -Wformat=2 -Wnull-dereference)
 endif ()
 
+#
+# Library target
+#
 set(LIBZELDA64_PUBLIC_HEADERS
         include/zelda64/zelda64.h
         ${CMAKE_CURRENT_BINARY_DIR}/include/zelda64/config.h)
@@ -70,40 +69,40 @@ set(LIBZELDA64_SOURCES
         lib/source_file.c
         lib/version.c)
 
-if (ZELDA64_BUILD_SHARED)
-    add_library(libzelda64_shared SHARED
-            ${LIBZELDA64_SOURCES}
-            ${LIBZELDA64_PUBLIC_HEADERS}
-            ${LIBZELDA64_PRIVATE_HEADERS})
+add_library(libzelda64 SHARED
+        ${LIBZELDA64_SOURCES}
+        ${LIBZELDA64_PUBLIC_HEADERS}
+        ${LIBZELDA64_PRIVATE_HEADERS})
 
-    add_library(zelda64::zelda64 ALIAS libzelda64_shared)
+add_library(zelda64::zelda64 ALIAS libzelda64)
 
-    target_include_directories(libzelda64_shared
-            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lib")
+target_include_directories(libzelda64
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
-    target_link_libraries(libzelda64_shared
-            PRIVATE yaz0::yaz0)
+target_link_libraries(libzelda64
+        PRIVATE yaz0::yaz0)
 
-    set_target_properties(libzelda64_shared PROPERTIES
-            OUTPUT_NAME "zelda64"
-            VERSION ${PROJECT_VERSION}
-            SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+set_target_properties(libzelda64 PROPERTIES
+        OUTPUT_NAME "zelda64"
+        VERSION ${PROJECT_VERSION}
+        SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
-    target_compile_definitions(libzelda64_shared PRIVATE ZELDA64_SHARED)
+target_compile_definitions(libzelda64 PRIVATE ZELDA64_SHARED)
+set_target_properties(libzelda64 PROPERTIES C_VISIBILITY_PRESET hidden)
+target_compile_features(libzelda64 PUBLIC c_std_99)
+target_compile_options(libzelda64 PRIVATE ${ZELDA64_WARNING_FLAGS})
 
-    set_target_properties(libzelda64_shared PROPERTIES C_VISIBILITY_PRESET hidden)
-    target_compile_features(libzelda64_shared PUBLIC c_std_99)
-    target_compile_options(libzelda64_shared PRIVATE ${ZELDA64_WARNING_FLAGS})
-endif ()
-
-set(ZELDA64_HEADERS)
-
-set(ZELDA64_SOURCES
-        src/zelda64.c)
-
+#
+# Program target
+#
 if (ZELDA64_BUILD_ZELDA64)
+    set(ZELDA64_HEADERS)
+
+    set(ZELDA64_SOURCES
+            src/zelda64.c)
+
     add_executable(zelda64
             ${ZELDA64_SOURCES}
             ${ZELDA64_HEADERS})
