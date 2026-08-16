@@ -98,9 +98,11 @@ target_compile_options(libzelda64 PRIVATE ${ZELDA64_WARNING_FLAGS})
 # Program target
 #
 if (ZELDA64_BUILD_ZELDA64)
-    set(ZELDA64_HEADERS)
+    set(ZELDA64_HEADERS
+            src/log.h)
 
     set(ZELDA64_SOURCES
+            src/log.c
             src/zelda64.c)
 
     add_executable(zelda64
