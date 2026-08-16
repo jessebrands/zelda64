@@ -16,7 +16,6 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Library settings
 #
 option(ZELDA64_BUILD_SHARED "Enable building libzelda64 as shared library" ON)
-option(ZELDA64_BUILD_UTILITIES "Enable building utilities" ${PROJECT_IS_TOP_LEVEL})
 
 #
 # Dependencies
@@ -96,33 +95,4 @@ if (ZELDA64_BUILD_SHARED)
     set_target_properties(libzelda64_shared PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(libzelda64_shared PUBLIC c_std_99)
     target_compile_options(libzelda64_shared PRIVATE ${ZELDA64_WARNING_FLAGS})
-endif ()
-
-if (ZELDA64_BUILD_UTILITIES AND ZELDA64_BUILD_SHARED)
-    add_executable(compress
-            src/compress.c)
-
-    target_link_libraries(compress
-            PRIVATE zelda64::zelda64)
-
-    target_compile_features(compress PRIVATE c_std_99)
-    target_compile_options(compress PRIVATE ${ZELDA64_WARNING_FLAGS})
-
-    add_executable(decompress
-            src/decompress.c)
-
-    target_link_libraries(decompress
-            PRIVATE zelda64::zelda64)
-
-    target_compile_features(decompress PRIVATE c_std_99)
-    target_compile_options(decompress PRIVATE ${ZELDA64_WARNING_FLAGS})
-
-    add_executable(extract
-            src/extract.c)
-
-    target_link_libraries(extract
-            PRIVATE zelda64::zelda64)
-
-    target_compile_features(extract PRIVATE c_std_99)
-    target_compile_options(extract PRIVATE ${ZELDA64_WARNING_FLAGS})
 endif ()
