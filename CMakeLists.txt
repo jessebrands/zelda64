@@ -16,6 +16,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Library settings
 #
 option(ZELDA64_BUILD_SHARED "Enable building libzelda64 as shared library" ON)
+option(ZELDA64_BUILD_ZELDA64 "Enable building zelda64 program" ${PROJECT_IS_TOP_LEVEL})
 
 #
 # Dependencies
@@ -95,4 +96,22 @@ if (ZELDA64_BUILD_SHARED)
     set_target_properties(libzelda64_shared PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_features(libzelda64_shared PUBLIC c_std_99)
     target_compile_options(libzelda64_shared PRIVATE ${ZELDA64_WARNING_FLAGS})
+endif ()
+
+set(ZELDA64_HEADERS)
+
+set(ZELDA64_SOURCES
+        src/zelda64.c)
+
+if (ZELDA64_BUILD_ZELDA64)
+    add_executable(zelda64
+            ${ZELDA64_SOURCES}
+            ${ZELDA64_HEADERS})
+
+    target_link_libraries(zelda64
+            PRIVATE yaz0::yaz0
+            PRIVATE zelda64::zelda64)
+
+    target_compile_features(zelda64 PUBLIC c_std_99)
+    target_compile_options(zelda64 PRIVATE ${ZELDA64_WARNING_FLAGS})
 endif ()
