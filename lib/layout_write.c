@@ -18,6 +18,7 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <yaz0/yaz0.h>
 
@@ -314,6 +315,58 @@ write_dmadata(FILE* file, uint32_t const position,
     return ZELDA64_OK;
 }
 
+static uint32_t
+round_up_pow2(uint32_t size) {
+    size -= 1;
+    size |= size >> 1;
+    size |= size >> 2;
+    size |= size >> 4;
+    size |= size >> 8;
+    size |= size >> 16;
+    return size + 1;
+}
+
+static zelda64_ssize_t
+pad_file(FILE* file, uint32_t position, enum zelda64_pad const pad,
+         struct zelda64_error* error) {
+    uint32_t const end = round_up_pow2(position);
+    if (end > LONG_MAX) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return -1;
+    }
+
+    // Seek to the position.
+    if (fseek(file, (long) position, SEEK_SET) != 0) {
+        zelda64_set_errno(error);
+        return -1;
+    }
+
+    uint8_t chunk[CHUNK_SIZE];
+    zelda64_ssize_t bytes_out = 0;
+    while ((position + bytes_out) < end) {
+        uint32_t const offset = position + (uint32_t) bytes_out;
+        uint32_t const available = end - offset;
+        uint32_t const want = available < CHUNK_SIZE ? available : CHUNK_SIZE;
+
+        // Prepare a chunk of bytes.
+        for (uint32_t i = 0; i < want; ++i) {
+            chunk[i] = (pad == ZELDA64_PAD_RAMP)
+                           ? (uint8_t) ((offset + i) & 0xFF)
+                           : 0;
+        }
+
+        // And append them to the end of the file.
+        if (fwrite(chunk, 1, want, file) != want) {
+            zelda64_set_errno(error);
+            return -1;
+        }
+
+        bytes_out += want;
+    }
+
+    return bytes_out;
+}
+
 enum zelda64_result
 zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
@@ -415,6 +468,15 @@ zelda64_write(char const* filename,
         };
 
         position = rom_start + size;
+    }
+
+    // Pad out the rest of the bytes in the ROM, if that was requested.
+    if (options->pad != ZELDA64_PAD_NONE) {
+        if (pad_file(file, position, options->pad, error) < 0) {
+            zelda64_free(layout->allocator, dmadata);
+            fclose(file);
+            return error->result;
+        }
     }
 
     // Now we must write the DMADATA to the ROM.
