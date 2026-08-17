@@ -18,13 +18,44 @@
  * along with zelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdbool.h>
-
-#include "options.h"
-
 #include <string.h>
 
 #include "log.h"
+#include "options.h"
+
+static int
+parse_pack(enum zelda64_pack* pack, char const* arg) {
+    assert(pack != NULL);
+    assert(arg != NULL);
+
+    if (strcmp(arg, "sparse") == 0) {
+        *pack = ZELDA64_PACK_SPARSE;
+        return 0;
+    }
+    if (strcmp(arg, "dense") == 0) {
+        *pack = ZELDA64_PACK_DENSE;
+        return 0;
+    }
+    return -1;
+}
+
+static bool
+is_option(char const* opt, size_t const name_len, char const* const name) {
+    return strlen(name) == name_len && strncmp(opt, name, name_len) == 0;
+}
+
+static char const*
+take_value(char const* const attached, int* i, int argc, char** argv) {
+    if (attached != NULL) {
+        return attached;
+    }
+    if (*i + 1 >= argc) {
+        return NULL;
+    }
+    return argv[++(*i)];
+}
 
 enum zelda64_parse_result
 parse_options(struct zelda64_options* options, int argc, char** argv) {
@@ -47,14 +78,24 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
             }
 
             char const* opt = &arg[2];
+            char const* const eq = strchr(opt, '=');
+            size_t const name_len = (eq != NULL) ? (size_t) (eq - opt) : strlen(opt);
+            char const* const attached = (eq != NULL) ? eq + 1 : NULL;
 
-            if (strcmp(opt, "version") == 0) {
+            if (is_option(opt, name_len, "pack")) {
+                char const* const value = take_value(attached, &i, argc, argv);
+                if (value == NULL || parse_pack(&options->pack, value) != 0) {
+                    return ZELDA64_PARSE_USAGE;
+                }
+                continue;
+            }
+            if (is_option(opt, name_len, "version")) {
                 return ZELDA64_PARSE_VERSION;
             }
-            if (strcmp(opt, "help") == 0) {
+            if (is_option(opt, name_len, "help")) {
                 return ZELDA64_PARSE_HELP;
             }
-            if (strcmp(opt, "verbose") == 0) {
+            if (is_option(opt, name_len, "verbose")) {
                 log_verbosity++;
                 continue;
             }
@@ -70,10 +111,21 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
                     log_verbosity++;
                     continue;
 
+                case 'P': {
+                    char const* const attached = (c[1] != '\0') ? c + 1 : NULL;
+                    char const* const value = take_value(attached, &i, argc, argv);
+                    if (value == NULL || parse_pack(&options->pack, value) != 0) {
+                        return ZELDA64_PARSE_USAGE;
+                    }
+                    break;
+                }
+
                 default:
                     logf_error("unknown option -- '%c'", *c);
                     return ZELDA64_PARSE_USAGE;
             }
+
+            break;
         }
     }
 

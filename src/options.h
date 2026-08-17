@@ -21,6 +21,8 @@
 #ifndef LIBZELDA64_OPTIONS_H
 #define LIBZELDA64_OPTIONS_H
 
+#include <zelda64/zelda64.h>
+
 enum zelda64_parse_result {
     ZELDA64_PARSE_OK,
     ZELDA64_PARSE_HELP,
@@ -31,6 +33,9 @@ enum zelda64_parse_result {
 struct zelda64_options {
     char const* in_filename;
     char const* out_filename;
+
+    enum zelda64_pad pad;
+    enum zelda64_pack pack;
 };
 
 enum zelda64_parse_result
