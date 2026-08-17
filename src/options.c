@@ -38,7 +38,7 @@ parse_pack(enum zelda64_pack* pack, char const* arg) {
         *pack = ZELDA64_PACK_DENSE;
         return 0;
     }
-    logf_error("invalid value for --pack -- '%s'", arg);
+    logf_error("invalid pack mode '%s'", arg);
     logf_error("expected one of: sparse, dense");
     return -1;
 }
@@ -60,7 +60,7 @@ parse_pad(enum zelda64_pad* pad, char const* arg) {
         *pad = ZELDA64_PAD_RAMP;
         return 0;
     }
-    logf_error("invalid value for --pad -- '%s'", arg);
+    logf_error("invalid pad mode '%s'", arg);
     logf_error("expected one of: none, zero, ramp");
     return -1;
 }
@@ -121,12 +121,24 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
                 continue;
             }
             if (is_option(opt, name_len, "version")) {
+                if (attached != NULL) {
+                    logf_error("option --version takes no argument");
+                    return ZELDA64_PARSE_USAGE;
+                }
                 return ZELDA64_PARSE_VERSION;
             }
             if (is_option(opt, name_len, "help")) {
+                if (attached != NULL) {
+                    logf_error("option --help takes no argument");
+                    return ZELDA64_PARSE_USAGE;
+                }
                 return ZELDA64_PARSE_HELP;
             }
             if (is_option(opt, name_len, "verbose")) {
+                if (attached != NULL) {
+                    logf_error("option --verbose takes no argument");
+                    return ZELDA64_PARSE_USAGE;
+                }
                 log_verbosity++;
                 continue;
             }
