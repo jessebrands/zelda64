@@ -25,8 +25,44 @@
 #include "log.h"
 #include "options.h"
 
+#include <stdlib.h>
+
+static struct zelda64_stage_spec*
+init_decompress_stage(struct zelda64_stage_spec* spec) {
+    *spec = (struct zelda64_stage_spec){
+        .stage = ZELDA64_STAGE_DECOMPRESS,
+        .as.decompress = {
+            .pack = ZELDA64_PACK_SPARSE,
+            .pad = ZELDA64_PAD_ZERO,
+            .list_filename = NULL,
+        },
+    };
+    return spec;
+}
+
+static struct zelda64_stage_spec*
+push_stage(struct zelda64_options* opts, enum zelda64_stage const stage) {
+    if (opts->stage_count == ZELDA64_MAX_STAGES) {
+        log_error("too many operations");
+        return NULL;
+    }
+
+    switch (stage) {
+        case ZELDA64_STAGE_DECOMPRESS:
+            return init_decompress_stage(&opts->stages[opts->stage_count++]);
+
+        default:
+            abort();
+    }
+}
+
+static struct zelda64_stage_spec*
+current_stage(struct zelda64_options* options) {
+    return options->stage_count > 0 ? &options->stages[options->stage_count - 1] : NULL;
+}
+
 static int
-parse_pack(enum zelda64_pack* pack, char const* arg) {
+parse_pack_value(enum zelda64_pack* pack, char const* arg) {
     assert(pack != NULL);
     assert(arg != NULL);
 
@@ -39,12 +75,28 @@ parse_pack(enum zelda64_pack* pack, char const* arg) {
         return 0;
     }
     logf_error("invalid pack mode '%s'", arg);
-    logf_error("expected one of: sparse, dense");
+    log_error("expected one of: sparse, dense");
     return -1;
 }
 
 static int
-parse_pad(enum zelda64_pad* pad, char const* arg) {
+parse_pack(struct zelda64_stage_spec* spec, char const* arg) {
+    assert(arg != NULL);
+
+    if (spec == NULL) {
+        log_error("invalid option 'pack'");
+        return -1;
+    }
+    if (spec->stage == ZELDA64_STAGE_DECOMPRESS) {
+        return parse_pack_value(&spec->as.decompress.pack, arg);
+    }
+
+    log_error("option 'pack' invalid for stage");
+    return -1;
+}
+
+static int
+parse_pad_value(enum zelda64_pad* pad, char const* arg) {
     assert(pad != NULL);
     assert(arg != NULL);
 
@@ -61,7 +113,23 @@ parse_pad(enum zelda64_pad* pad, char const* arg) {
         return 0;
     }
     logf_error("invalid pad mode '%s'", arg);
-    logf_error("expected one of: none, zero, ramp");
+    log_error("expected one of: none, zero, ramp");
+    return -1;
+}
+
+static int
+parse_pad(struct zelda64_stage_spec* spec, char const* arg) {
+    assert(arg != NULL);
+
+    if (spec == NULL) {
+        log_error("invalid option 'pad'");
+        return -1;
+    }
+    if (spec->stage == ZELDA64_STAGE_DECOMPRESS) {
+        return parse_pad_value(&spec->as.decompress.pad, arg);
+    }
+
+    log_error("option 'pad' invalid for stage");
     return -1;
 }
 
@@ -90,6 +158,19 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
 
         // just a dash, or the end
         if (end || arg[0] != '-' || arg[1] == '\0') {
+            if (strcmp(arg, "-") == 0) {
+                log_error("stdio is not supported");
+                return ZELDA64_PARSE_USAGE;
+            }
+
+            if (options->in_filename == NULL) {
+                options->in_filename = arg;
+            } else if (options->out_filename == NULL) {
+                options->out_filename = arg;
+            } else {
+                logf_error("unexpected operand '%s'", arg);
+                return ZELDA64_PARSE_USAGE;
+            }
             continue;
         }
 
@@ -106,37 +187,47 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
             size_t const name_len = (eq != NULL) ? (size_t) (eq - opt) : strlen(opt);
             char const* const attached = (eq != NULL) ? eq + 1 : NULL;
 
+            if (is_option(opt, name_len, "decompress")) {
+                if (attached != NULL) {
+                    log_error("option --decompress takes no argument");
+                    return ZELDA64_PARSE_USAGE;
+                }
+                if (push_stage(options, ZELDA64_STAGE_DECOMPRESS) == NULL) {
+                    return ZELDA64_PARSE_USAGE;
+                }
+                continue;
+            }
             if (is_option(opt, name_len, "pack")) {
                 char const* const value = take_value(attached, &i, argc, argv);
-                if (value == NULL || parse_pack(&options->pack, value) != 0) {
+                if (value == NULL || parse_pack(current_stage(options), value) != 0) {
                     return ZELDA64_PARSE_USAGE;
                 }
                 continue;
             }
             if (is_option(opt, name_len, "pad")) {
                 char const* const value = take_value(attached, &i, argc, argv);
-                if (value == NULL || parse_pad(&options->pad, value) != 0) {
+                if (value == NULL || parse_pad(current_stage(options), value) != 0) {
                     return ZELDA64_PARSE_USAGE;
                 }
                 continue;
             }
             if (is_option(opt, name_len, "version")) {
                 if (attached != NULL) {
-                    logf_error("option --version takes no argument");
+                    log_error("option --version takes no argument");
                     return ZELDA64_PARSE_USAGE;
                 }
                 return ZELDA64_PARSE_VERSION;
             }
             if (is_option(opt, name_len, "help")) {
                 if (attached != NULL) {
-                    logf_error("option --help takes no argument");
+                    log_error("option --help takes no argument");
                     return ZELDA64_PARSE_USAGE;
                 }
                 return ZELDA64_PARSE_HELP;
             }
             if (is_option(opt, name_len, "verbose")) {
                 if (attached != NULL) {
-                    logf_error("option --verbose takes no argument");
+                    log_error("option --verbose takes no argument");
                     return ZELDA64_PARSE_USAGE;
                 }
                 log_verbosity++;
@@ -150,6 +241,12 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
         // must be a -s -h -o -r -t argument
         for (char const* c = arg + 1; *c != '\0'; ++c) {
             switch (*c) {
+                case 'd':
+                    if (push_stage(options, ZELDA64_STAGE_DECOMPRESS) == NULL) {
+                        return ZELDA64_PARSE_USAGE;
+                    }
+                    continue;
+
                 case 'v':
                     log_verbosity++;
                     continue;
@@ -157,7 +254,7 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
                 case 'P': {
                     char const* const attached = (c[1] != '\0') ? c + 1 : NULL;
                     char const* const value = take_value(attached, &i, argc, argv);
-                    if (value == NULL || parse_pack(&options->pack, value) != 0) {
+                    if (value == NULL || parse_pack(current_stage(options), value) != 0) {
                         return ZELDA64_PARSE_USAGE;
                     }
                     break;
