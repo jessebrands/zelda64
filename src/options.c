@@ -38,6 +38,30 @@ parse_pack(enum zelda64_pack* pack, char const* arg) {
         *pack = ZELDA64_PACK_DENSE;
         return 0;
     }
+    logf_error("invalid value for --pack -- '%s'", arg);
+    logf_error("expected one of: sparse, dense");
+    return -1;
+}
+
+static int
+parse_pad(enum zelda64_pad* pad, char const* arg) {
+    assert(pad != NULL);
+    assert(arg != NULL);
+
+    if (strcmp(arg, "none") == 0) {
+        *pad = ZELDA64_PAD_NONE;
+        return 0;
+    }
+    if (strcmp(arg, "zero") == 0) {
+        *pad = ZELDA64_PAD_ZERO;
+        return 0;
+    }
+    if (strcmp(arg, "ramp") == 0) {
+        *pad = ZELDA64_PAD_RAMP;
+        return 0;
+    }
+    logf_error("invalid value for --pad -- '%s'", arg);
+    logf_error("expected one of: none, zero, ramp");
     return -1;
 }
 
@@ -85,6 +109,13 @@ parse_options(struct zelda64_options* options, int argc, char** argv) {
             if (is_option(opt, name_len, "pack")) {
                 char const* const value = take_value(attached, &i, argc, argv);
                 if (value == NULL || parse_pack(&options->pack, value) != 0) {
+                    return ZELDA64_PARSE_USAGE;
+                }
+                continue;
+            }
+            if (is_option(opt, name_len, "pad")) {
+                char const* const value = take_value(attached, &i, argc, argv);
+                if (value == NULL || parse_pad(&options->pad, value) != 0) {
                     return ZELDA64_PARSE_USAGE;
                 }
                 continue;
