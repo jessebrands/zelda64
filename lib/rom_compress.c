@@ -60,15 +60,15 @@ compress_rom(struct zelda64_rom const* rom,
                 break;
         }
 
+        // First 3 files are always copied, never compressed.
+        if (i < 3) {
+            entries[i].operation = ZELDA64_OP_COPY;
+        }
+
         entry->from_type = ZELDA64_FROM_ROM;
         entry->from.rom.rom = rom;
         entry->from.rom.index = i;
     }
-
-    // The first 3 entries should never, ever be compressed:
-    entries[0].operation = ZELDA64_OP_COPY;
-    entries[1].operation = ZELDA64_OP_COPY;
-    entries[2].operation = ZELDA64_OP_COPY;
 
     return entries;
 }

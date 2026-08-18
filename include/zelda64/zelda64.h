@@ -250,7 +250,7 @@ zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
                     struct zelda64_write_options const* options,
                     struct zelda64_error* error);
 
-ZELDA64_API void
+ZELDA64_API size_t
 zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
               struct zelda64_write_options const* options,
