@@ -77,6 +77,8 @@ zelda64_decompress(struct zelda64_rom const* rom, struct zelda64_error* error) {
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
+
     if (rom == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return NULL;
@@ -93,6 +95,7 @@ zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't generate a layout from nothing.
     if (rom == NULL) {
@@ -119,6 +122,5 @@ zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
         .entries = entries,
     };
 
-    zelda64_clear_error(error);
     return layout;
 }

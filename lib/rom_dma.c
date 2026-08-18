@@ -231,6 +231,7 @@ zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't grab the DMADATA from nothing.
     if (rom == NULL) {
@@ -238,7 +239,6 @@ zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return 0; // Valid ROMs always have 3 or more files, this is OK.
     }
 
-    zelda64_clear_error(error);
     return rom->dmadata_info.count;
 }
 
@@ -248,6 +248,7 @@ zelda64_dmadata(struct zelda64_rom const* rom, struct zelda64_error* error) {
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't grab the DMADATA from nothing.
     if (rom == NULL) {
@@ -255,7 +256,6 @@ zelda64_dmadata(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return NULL;
     }
 
-    zelda64_clear_error(error);
     return rom->dmadata;
 }
 
@@ -266,6 +266,7 @@ zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t const index
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Grab the DMADATA from the ROM.
     struct zelda64_dmadata const* dmadata = zelda64_dmadata(rom, error);
@@ -279,6 +280,5 @@ zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t const index
         return NULL;
     }
 
-    zelda64_clear_error(error);
     return &rom->dmadata[index];
 }

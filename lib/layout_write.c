@@ -455,6 +455,7 @@ zelda64_write(char const* filename,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     if (filename == NULL || layout == NULL || options == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
@@ -469,7 +470,10 @@ zelda64_write(char const* filename,
 
     size_t const bytes_out = write_rom(&out_file, layout, options, error);
     zelda64_io_close(&out_file);
-    zelda64_clear_error(error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
     return bytes_out;
 }
 
@@ -482,6 +486,8 @@ zelda64_write_buffer(uint8_t* data, size_t const size,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
+
     if ((data == NULL && size > 0) || layout == NULL || options == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return 0;
@@ -495,6 +501,9 @@ zelda64_write_buffer(uint8_t* data, size_t const size,
 
     size_t const bytes_out = write_rom(&out_buffer, layout, options, error);
     zelda64_io_close(&out_buffer);
-    zelda64_clear_error(error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
     return bytes_out;
 }

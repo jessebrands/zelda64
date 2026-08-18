@@ -30,6 +30,7 @@ zelda64_layout_set_operation(struct zelda64_dmadata_layout* layout,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     if (layout == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
@@ -42,5 +43,4 @@ zelda64_layout_set_operation(struct zelda64_dmadata_layout* layout,
     }
 
     layout->entries[index].operation = operation;
-    zelda64_clear_error(error);
 }

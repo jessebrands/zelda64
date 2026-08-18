@@ -78,6 +78,12 @@ enum zelda64_result
 zelda64_stat(struct zelda64_stat* st,
              struct zelda64_rom const* rom, zelda64_index_t const index,
              struct zelda64_error* error) {
+    struct zelda64_error local_error = {0};
+    if (error == NULL) {
+        error = &local_error;
+    }
+    zelda64_clear_error(error);
+
     if (st == NULL || rom == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
@@ -131,6 +137,5 @@ zelda64_stat(struct zelda64_stat* st,
     }
 
     *st = stat;
-    zelda64_clear_error(error);
     return ZELDA64_OK;
 }

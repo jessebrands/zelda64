@@ -116,6 +116,7 @@ zelda64_read_storage(void* buffer, size_t const size,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't read from nothing, nor can we write to nothing.
     if (rom == NULL || (buffer == NULL && size > 0)) {
@@ -135,7 +136,6 @@ zelda64_read_storage(void* buffer, size_t const size,
         return 0;
     }
 
-    zelda64_clear_error(error);
     return bytes_in;
 }
 
@@ -147,6 +147,7 @@ zelda64_read_file(void* buffer, size_t const size,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't read from nothing, nor can we write to nothing.
     if (rom == NULL || (buffer == NULL && size > 0)) {
@@ -178,6 +179,5 @@ zelda64_read_file(void* buffer, size_t const size,
         return 0;
     }
 
-    zelda64_clear_error(error);
     return bytes_in;
 }

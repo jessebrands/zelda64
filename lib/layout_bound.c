@@ -128,6 +128,7 @@ zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Sparse is just the maximum value.
     if (options->pack == ZELDA64_PACK_SPARSE) {
@@ -166,6 +167,5 @@ zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
         bound = zelda64_ceil_pow2(bound);
     }
 
-    zelda64_clear_error(error);
     return bound;
 }

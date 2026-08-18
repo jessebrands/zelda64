@@ -72,6 +72,7 @@ zelda64_open_with_allocator(char const* filename,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Can't open a file we don't have.
     if (filename == NULL) {
@@ -92,7 +93,6 @@ zelda64_open_with_allocator(char const* filename,
         return NULL;
     }
 
-    zelda64_clear_error(error);
     return rom;
 }
 
@@ -111,6 +111,7 @@ zelda64_open_buffer_with_allocator(uint8_t const* data, size_t const size,
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     // Wrap the buffer in an I/O object.
     struct zelda64_io file = {0};
@@ -125,7 +126,6 @@ zelda64_open_buffer_with_allocator(uint8_t const* data, size_t const size,
         return NULL;
     }
 
-    zelda64_clear_error(error);
     return rom;
 }
 
@@ -146,6 +146,7 @@ zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error) {
     if (error == NULL) {
         error = &local_error;
     }
+    zelda64_clear_error(error);
 
     if (rom == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
@@ -157,6 +158,5 @@ zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return 0;
     }
 
-    zelda64_clear_error(error);
     return size;
 }
