@@ -39,6 +39,12 @@ typedef zelda64_ssize_t
                     struct zelda64_error* error);
 
 typedef zelda64_ssize_t
+(zelda64_write_func)(void* opaque,
+                     void const* buffer, size_t size,
+                     zelda64_offset_t offset,
+                     struct zelda64_error* error);
+
+typedef zelda64_ssize_t
 (zelda64_size_func)(void* opaque, struct zelda64_error* error);
 
 typedef void
@@ -46,6 +52,7 @@ typedef void
 
 struct zelda64_io {
     zelda64_read_func* read;
+    zelda64_write_func* write;
     zelda64_size_func* size;
     zelda64_close_func* close;
     void* opaque;
@@ -74,6 +81,28 @@ zelda64_io_read(struct zelda64_io const* io,
     }
 
     return io->read(io->opaque, buffer, size, offset, error);
+}
+
+static inline zelda64_ssize_t
+zelda64_io_write(struct zelda64_io* io,
+                 void const* buffer, size_t const size,
+                 zelda64_offset_t const offset,
+                 struct zelda64_error* error) {
+    if (io == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return -1;
+    }
+    if (io->write == NULL) {
+        zelda64_set_error(error, ZELDA64_UNSUPPORTED);
+        return -1;
+    }
+
+    if (buffer == NULL && size > 0) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return -1;
+    }
+
+    return io->write(io->opaque, buffer, size, offset, error);
 }
 
 static inline zelda64_ssize_t

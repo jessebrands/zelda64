@@ -69,6 +69,7 @@ zelda64_io_fopen_ro(struct zelda64_io* io,
     // Set the vtable and opaque.
     *io = (struct zelda64_io){
         .read = zelda64_file_read,
+        .write = NULL,
         .size = zelda64_file_size,
         .close = zelda64_file_close,
         .opaque = file
@@ -95,6 +96,7 @@ zelda64_io_from_file_ro(struct zelda64_io* io,
 
     *io = (struct zelda64_io){
         .read = zelda64_file_read,
+        .write = NULL,
         .size = zelda64_file_size,
         .close = zelda64_file_close_non_owning,
         .opaque = file,
