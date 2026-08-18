@@ -343,7 +343,7 @@ write_rom(struct zelda64_io* out_rom,
 
     // Enter the writing loop, this is where things get complex.
     uint32_t position = 0;
-    size_t rom_size = 0;
+    uint32_t rom_size = 0;
     for (size_t i = 0; i < count; ++i) {
         struct zelda64_layout_entry const* entry = &layout->entries[i];
 
@@ -410,7 +410,7 @@ write_rom(struct zelda64_io* out_rom,
 
     // Pad out the rest of the bytes in the ROM, if that was requested.
     if (options->pad != ZELDA64_PAD_NONE) {
-        rom_size += pad_file(out_rom, position, options->pad, error);
+        rom_size += pad_file(out_rom, rom_size, options->pad, error);
         if (ZELDA64_FAILED(error)) {
             zelda64_free(layout->allocator, dmadata);
             return 0;
