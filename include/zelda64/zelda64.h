@@ -61,6 +61,7 @@ enum zelda64_result {
     ZELDA64_COMPRESS_ERROR = -9,
     ZELDA64_INVALID_ROM = -10,
     ZELDA64_UNSUPPORTED_CIC = -11,
+    ZELDA64_UNSUPPORTED = -12,
 };
 
 enum zelda64_cic {

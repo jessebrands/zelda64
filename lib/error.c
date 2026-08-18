@@ -38,6 +38,7 @@ zelda64_result_string(enum zelda64_result const result) {
         case ZELDA64_COMPRESS_ERROR: return "compression error";
         case ZELDA64_INVALID_ROM: return "invalid ROM";
         case ZELDA64_UNSUPPORTED_CIC: return "unknown CIC";
+        case ZELDA64_UNSUPPORTED: return "unsupported operation";
     }
     return "unknown";
 }
