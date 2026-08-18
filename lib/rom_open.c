@@ -63,7 +63,8 @@ zelda64_open_with_allocator(char const* filename,
     rom->allocator = allocator;
 
     // Open the ROM file.
-    if (zelda64_io_fopen_ro(&rom->io, filename, allocator, error) < 0) {
+    zelda64_io_fopen_ro(&rom->io, filename, allocator, error);
+    if (error->result != ZELDA64_OK) {
         zelda64_close(rom);
         return NULL;
     }

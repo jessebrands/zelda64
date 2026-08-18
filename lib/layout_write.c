@@ -389,7 +389,8 @@ zelda64_write(char const* filename,
 
     // Open this read-only I/O over the ROM for later.
     struct zelda64_io out_rom;
-    if (zelda64_io_from_file_ro(&out_rom, file, layout->allocator, error) != ZELDA64_OK) {
+    zelda64_io_from_file_ro(&out_rom, file, layout->allocator, error);
+    if (error->result != ZELDA64_OK) {
         fclose(file);
         zelda64_free(layout->allocator, dmadata);
         return error->result;
