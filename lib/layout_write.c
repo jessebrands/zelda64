@@ -410,7 +410,7 @@ write_rom(struct zelda64_io* out_rom,
 
     // Pad out the rest of the bytes in the ROM, if that was requested.
     if (options->pad != ZELDA64_PAD_NONE) {
-        pad_file(out_rom, position, options->pad, error);
+        rom_size += pad_file(out_rom, position, options->pad, error);
         if (ZELDA64_FAILED(error)) {
             zelda64_free(layout->allocator, dmadata);
             return 0;
