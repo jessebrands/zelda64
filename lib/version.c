@@ -18,6 +18,9 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <yaz0/yaz0.h>
+
 #include "zelda64/zelda64.h"
 
 int
@@ -28,4 +31,10 @@ zelda64_version(void) {
 char const*
 zelda64_version_string(void) {
     return ZELDA64_VERSION_STRING;
+}
+
+void zelda64_compressor_name(char* dst, size_t const size) {
+    snprintf(dst, size, "libyaz0 %s (%s)",
+        yaz0_version_string(),
+        yaz0_search_name(yaz0_default_search()));
 }

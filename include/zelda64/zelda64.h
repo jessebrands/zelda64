@@ -292,6 +292,10 @@ zelda64_version(void);
 ZELDA64_API char const*
 zelda64_version_string(void);
 
+
+ZELDA64_API void
+zelda64_compressor_name(char* dst, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
