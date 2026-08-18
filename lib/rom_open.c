@@ -91,7 +91,7 @@ zelda64_close(struct zelda64_rom* rom) {
     }
 
     zelda64_free(rom->allocator, rom->dmadata);
-    zelda64_io_close(&rom->io, rom->allocator);
+    zelda64_io_close(&rom->io);
     zelda64_free(rom->allocator, rom);
 }
 

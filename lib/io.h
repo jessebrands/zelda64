@@ -56,6 +56,7 @@ struct zelda64_io {
     zelda64_size_func* size;
     zelda64_close_func* close;
     void* opaque;
+    struct zelda64_allocator allocator;
 };
 
 static inline size_t
@@ -128,20 +129,20 @@ zelda64_io_size(struct zelda64_io const* io, struct zelda64_error* error) {
 }
 
 static inline void
-zelda64_io_close(struct zelda64_io* io, struct zelda64_allocator const allocator) {
+zelda64_io_close(struct zelda64_io* io) {
     if (io == NULL || io->close == NULL) {
         return;
     }
 
-    io->close(io->opaque, allocator);
+    io->close(io->opaque, io->allocator);
     io->opaque = NULL;
 }
 
 void
 zelda64_io_fopen(struct zelda64_io* io,
-                    char const* filename,
-                    struct zelda64_allocator allocator,
-                    struct zelda64_error* error);
+                 char const* filename,
+                 struct zelda64_allocator allocator,
+                 struct zelda64_error* error);
 
 void
 zelda64_io_fopen_ro(struct zelda64_io* io,

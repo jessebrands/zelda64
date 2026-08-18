@@ -464,6 +464,6 @@ zelda64_write(char const* filename,
     }
 
     size_t const bytes_out = write_rom(&out_file, layout, options, error);
-    zelda64_io_close(&out_file, layout->allocator);
+    zelda64_io_close(&out_file);
     return bytes_out;
 }
