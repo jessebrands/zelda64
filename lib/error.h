@@ -26,6 +26,9 @@
 
 #include "zelda64/zelda64.h"
 
+#define ZELDA64_SUCCESS(x) (x->result == ZELDA64_OK)
+#define ZELDA64_FAILED(x) (x->result != ZELDA64_OK)
+
 static inline enum zelda64_result
 zelda64_set_error(struct zelda64_error* error, enum zelda64_result const result) {
     assert(error != NULL);
