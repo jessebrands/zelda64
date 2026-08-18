@@ -111,8 +111,8 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
     assert(error != NULL);
 
     // Get the ROM size and check its size.
-    zelda64_ssize_t const file_size = zelda64_io_size(io, error);
-    if (file_size < 0) {
+    size_t const file_size = zelda64_io_size(io, error);
+    if (ZELDA64_FAILED(error)) {
         return error->result;
     }
     if (file_size > UINT32_MAX) {
@@ -128,7 +128,8 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
         uint32_t const want = remaining < sizeof chunk ? remaining : sizeof chunk;
 
         // Read in the next chunk of data.
-        if (zelda64_io_read_exact(io, chunk, want, offset, error) < 0) {
+        zelda64_io_read_exact(io, chunk, want, offset, error);
+        if (ZELDA64_FAILED(error)) {
             return error->result;
         }
 
@@ -142,14 +143,14 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
             // This could be the MAKEROM! Get the next two entries and confirm.
             uint32_t const candidate = offset + i;
             uint8_t entry_buffer[ZELDA64_DMA_ENTRY_SIZE * 2];
-            zelda64_ssize_t const bytes_in = zelda64_io_read_exact(
+            zelda64_io_read_exact(
                 io,
                 entry_buffer, sizeof entry_buffer,
                 candidate + ZELDA64_DMA_ENTRY_SIZE,
                 error
             );
 
-            if (bytes_in < 0) {
+            if (ZELDA64_FAILED(error)) {
                 // We're too close to EOF to be the file,
                 // just let the function fail gracefully from here.
                 if (error->result == ZELDA64_TRUNCATED) {
@@ -208,7 +209,8 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
         // Get the entries from the ROM.
         zelda64_offset_t const offset = info.offset + i * ZELDA64_DMA_ENTRY_SIZE;
         uint8_t chunk[ZELDA64_DMA_ENTRY_SIZE * READ_COUNT];
-        if (zelda64_io_read_exact(&rom->io, chunk, want * ZELDA64_DMA_ENTRY_SIZE, offset, error) < 0) {
+        zelda64_io_read_exact(&rom->io, chunk, want * ZELDA64_DMA_ENTRY_SIZE, offset, error);
+        if (ZELDA64_FAILED(error)) {
             zelda64_free(rom->allocator, entries);
             return error->result;
         }

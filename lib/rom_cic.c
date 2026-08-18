@@ -36,7 +36,7 @@
 #define CHECK_CODE_IPL3_SIZE     (CHECK_CODE_IPL3_END - IPL3_BOOTCODE_START)
 #define CHECK_CODE_SEED_6105     0xDF26F436
 
-static zelda64_ssize_t
+static void
 read_ipl3_bootcode(uint8_t* buffer, size_t const size,
                    struct zelda64_io const* io,
                    struct zelda64_dmadata const* dmadata,
@@ -52,10 +52,10 @@ read_ipl3_bootcode(uint8_t* buffer, size_t const size,
     // If this entry is too small, then this is not a valid ROM.
     if (e_makerom->vrom_end - e_makerom->vrom_start < IPL3_CHECKSUM_END) {
         zelda64_set_error(error, ZELDA64_INVALID_ROM);
-        return -1;
+        return;
     }
 
-    return zelda64_io_read_exact(
+    zelda64_io_read_exact(
         io,
         buffer, size,
         IPL3_BOOTCODE_START,
@@ -93,7 +93,7 @@ zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
     // are a Nintendo 64 Zelda ROM library. :-)
     uint8_t ipl3_bootcode[IPL3_CHECKSUM_SIZE];
 
-    zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
+    read_ipl3_bootcode(
         ipl3_bootcode, sizeof ipl3_bootcode,
         &rom->io,
         rom->dmadata,
@@ -101,7 +101,7 @@ zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
         error
     );
 
-    if (bytes_in < 0) {
+    if (ZELDA64_FAILED(error)) {
         return ZELDA64_CIC_UNKNOWN;
     }
 
@@ -126,7 +126,7 @@ check_code_seed(enum zelda64_cic const cic, struct zelda64_error* error) {
         case ZELDA64_CIC_6105:
             return CHECK_CODE_SEED_6105;
 
-        case ZELDA64_CIC_UNKNOWN:
+        default:
             break;
     }
 
@@ -134,22 +134,24 @@ check_code_seed(enum zelda64_cic const cic, struct zelda64_error* error) {
     return 0;
 }
 
-static enum zelda64_result
+static void
 check_code_init(enum zelda64_cic const cic,
                 uint8_t const* ipl, size_t const ipl_size,
                 struct check_code_state* state,
                 struct zelda64_error* error) {
     if (state == NULL || ipl == NULL) {
-        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return;
     }
     if (ipl_size < CHECK_CODE_IPL3_SIZE) {
-        return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return;
     }
 
     // Get initial seed for the CIC-NUS chip.
     uint32_t const seed = check_code_seed(cic, error);
-    if (seed == 0) {
-        return error->result;
+    if (ZELDA64_FAILED(error)) {
+        return;
     }
 
     *state = (struct check_code_state){
@@ -158,20 +160,20 @@ check_code_init(enum zelda64_cic const cic,
         .ipl = ipl,
         .ipl_size = ipl_size
     };
-
-    return ZELDA64_OK;
 }
 
-static enum zelda64_result
+static void
 check_code(struct check_code_state* state,
            uint8_t const* data, size_t const size,
            struct zelda64_error* error) {
     // If our arguments don't make sense, bail.
     if (state == NULL || data == NULL || size % 4 != 0 || state->ipl == NULL) {
-        return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return;
     }
     if (state->ipl_size < CHECK_CODE_IPL3_SIZE) {
-        return zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return;
     }
 
     size_t const start = state->offset;
@@ -202,8 +204,6 @@ check_code(struct check_code_state* state,
         i += 4;
         state->offset += 4;
     }
-
-    return ZELDA64_OK;
 }
 
 static uint64_t
@@ -229,14 +229,14 @@ zelda64_calculate_check_code(struct zelda64_io const* io,
     uint8_t ipl3_bootcode[IPL3_CHECKSUM_SIZE];
 
     // To calculate this, we'll need the IPL3 bootcode.
-    zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
+    read_ipl3_bootcode(
         ipl3_bootcode, sizeof ipl3_bootcode,
         io,
         dmadata, dmadata_count,
         error
     );
 
-    if (bytes_in < 0) {
+    if (ZELDA64_FAILED(error)) {
         return 0;
     }
 
@@ -257,10 +257,12 @@ zelda64_calculate_check_code(struct zelda64_io const* io,
     while (offset < CHECK_CODE_END) {
         size_t const remaining = CHECK_CODE_END - offset;
         size_t const want = remaining < sizeof chunk ? remaining : sizeof chunk;
-        if (zelda64_io_read_exact(io, chunk, want, offset, error) < 0) {
+        zelda64_io_read_exact(io, chunk, want, offset, error);
+        if (ZELDA64_FAILED(error)) {
             return 0;
         }
-        if (check_code(&state, chunk, want, error) != ZELDA64_OK) {
+        check_code(&state, chunk, want, error);
+        if (ZELDA64_FAILED(error)) {
             return 0;
         }
         offset += want;

@@ -46,7 +46,6 @@ extern "C" {
 
 typedef size_t zelda64_index_t;
 typedef size_t zelda64_offset_t;
-typedef int64_t zelda64_ssize_t;
 
 enum zelda64_result {
     ZELDA64_OK = 0,
@@ -189,7 +188,7 @@ zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t index,
 /*
  * Reads bytes directly from the ROM to a buffer.
  */
-ZELDA64_API zelda64_ssize_t
+ZELDA64_API size_t
 zelda64_read_storage(void* buffer, size_t size,
                      struct zelda64_rom const* rom,
                      zelda64_index_t index, uint32_t offset,
@@ -198,7 +197,7 @@ zelda64_read_storage(void* buffer, size_t size,
 /*
  * Reads a file from the ROM into a buffer.
  */
-ZELDA64_API zelda64_ssize_t
+ZELDA64_API size_t
 zelda64_read_file(void* buffer, size_t size,
                   struct zelda64_rom const* rom, zelda64_index_t index,
                   struct zelda64_error* error);
@@ -206,7 +205,7 @@ zelda64_read_file(void* buffer, size_t size,
 /*
  * Returns the size of the ROM in bytes.
  */
-ZELDA64_API zelda64_ssize_t
+ZELDA64_API size_t
 zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error);
 
 ZELDA64_API struct zelda64_dmadata_layout*
@@ -251,7 +250,7 @@ zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
                     struct zelda64_write_options const* options,
                     struct zelda64_error* error);
 
-ZELDA64_API enum zelda64_result
+ZELDA64_API void
 zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
               struct zelda64_write_options const* options,

@@ -28,13 +28,13 @@ struct zelda64_io_file {
     FILE* handle;
 };
 
-static zelda64_ssize_t
+static size_t
 zelda64_file_read(void* opaque,
                   void* buffer, size_t size,
                   zelda64_offset_t offset,
                   struct zelda64_error* error);
 
-static zelda64_ssize_t
+static size_t
 zelda64_file_size(void* opaque, struct zelda64_error* error);
 
 static void
@@ -107,7 +107,7 @@ zelda64_io_from_file_ro(struct zelda64_io* io,
     };
 }
 
-static zelda64_ssize_t
+static size_t
 zelda64_file_read(void* opaque,
                   void* buffer, size_t const size,
                   zelda64_offset_t const offset,
@@ -122,11 +122,11 @@ zelda64_file_read(void* opaque,
     // Standard C is pretty restricted when it comes to these things!
     if (offset > LONG_MAX) {
         zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
-        return -1;
+        return 0;
     }
     if (fseek(file->handle, (long) offset, SEEK_SET) != 0) {
         zelda64_set_errno(error);
-        return -1;
+        return 0;
     }
 
     // Perform the read and check for errors.
@@ -135,13 +135,13 @@ zelda64_file_read(void* opaque,
     int const sys_error = errno; // capture errno cause ferror can set it
     if (ferror(file->handle)) {
         zelda64_set_sys_error(error, ZELDA64_ERRNO, sys_error);
-        return -1;
+        return 0;
     }
 
-    return (zelda64_ssize_t) in_count;
+    return in_count;
 }
 
-static zelda64_ssize_t
+static size_t
 zelda64_file_size(void* opaque, struct zelda64_error* error) {
     struct zelda64_io_file const* file = opaque;
 
@@ -152,7 +152,7 @@ zelda64_file_size(void* opaque, struct zelda64_error* error) {
     // Seek to the end of the file.
     if (fseek(file->handle, 0, SEEK_END) != 0) {
         zelda64_set_errno(error);
-        return -1;
+        return 0;
     }
 
     // The position here is equal to the file size.
@@ -160,10 +160,10 @@ zelda64_file_size(void* opaque, struct zelda64_error* error) {
     long const position = ftell(file->handle);
     if (position < 0) {
         zelda64_set_errno(error);
-        return -1;
+        return 0;
     }
 
-    return position;
+    return (size_t) position;
 }
 
 static void

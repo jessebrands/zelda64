@@ -26,7 +26,7 @@
 
 #define CHUNK_SIZE 1024
 
-static zelda64_ssize_t
+static size_t
 read_bytes(void* buffer, size_t const size,
            struct zelda64_rom const* rom, uint32_t const offset,
            struct zelda64_stat const* st,
@@ -48,7 +48,7 @@ read_bytes(void* buffer, size_t const size,
     );
 }
 
-static zelda64_ssize_t
+static size_t
 decompress(void* buffer, uint32_t const file_size,
            struct zelda64_rom const* rom,
            struct zelda64_stat const* st,
@@ -62,7 +62,7 @@ decompress(void* buffer, uint32_t const file_size,
     enum yaz0_result decompress_result = yaz0_decompress_init(&stream);
     if (decompress_result != YAZ0_OK) {
         zelda64_set_sys_error(error, ZELDA64_DECOMPRESS_ERROR, decompress_result);
-        return -1;
+        return 0;
     }
 
     // We have a full buffer available, so use it.
@@ -77,14 +77,14 @@ decompress(void* buffer, uint32_t const file_size,
         uint32_t const remaining = st->size - position;
         uint32_t const want = remaining < CHUNK_SIZE ? remaining : CHUNK_SIZE;
 
-        zelda64_ssize_t const bytes_in = read_bytes(chunk, want, rom, position, st, error);
-        if (bytes_in < 0) {
+        size_t const bytes_in = read_bytes(chunk, want, rom, position, st, error);
+        if (ZELDA64_FAILED(error)) {
             yaz0_decompress_end(&stream);
-            return -1;
+            return 0;
         }
 
         // Set up the stream with the newly read bytes.
-        stream.avail_in = (size_t) bytes_in;
+        stream.avail_in = bytes_in;
         stream.next_in = chunk;
         position += (uint32_t) bytes_in;
 
@@ -98,16 +98,16 @@ decompress(void* buffer, uint32_t const file_size,
         if (decompress_result < YAZ0_OK) {
             zelda64_set_sys_error(error, ZELDA64_DECOMPRESS_ERROR, decompress_result);
             yaz0_decompress_end(&stream);
-            return -1;
+            return 0;
         }
     } while (decompress_result != YAZ0_STREAM_END);
 
     // Clean up.
     yaz0_decompress_end(&stream);
-    return (zelda64_ssize_t) stream.total_out;
+    return stream.total_out;
 }
 
-zelda64_ssize_t
+size_t
 zelda64_read_storage(void* buffer, size_t const size,
                      struct zelda64_rom const* rom,
                      zelda64_index_t const index, uint32_t const offset,
@@ -120,19 +120,20 @@ zelda64_read_storage(void* buffer, size_t const size,
     // Can't read from nothing, nor can we write to nothing.
     if (rom == NULL || (buffer == NULL && size > 0)) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     // Get information about this file.
     struct zelda64_stat st;
-    if (zelda64_stat(&st, rom, index, error) != ZELDA64_OK) {
-        return -1;
+    zelda64_stat(&st, rom, index, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
     }
 
     return read_bytes(buffer, size, rom, offset, &st, error);
 }
 
-zelda64_ssize_t
+size_t
 zelda64_read_file(void* buffer, size_t const size,
                   struct zelda64_rom const* rom, zelda64_index_t const index,
                   struct zelda64_error* error) {
@@ -144,19 +145,20 @@ zelda64_read_file(void* buffer, size_t const size,
     // Can't read from nothing, nor can we write to nothing.
     if (rom == NULL || (buffer == NULL && size > 0)) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     // Get information about this file.
     struct zelda64_stat st;
-    if (zelda64_stat(&st, rom, index, error) != ZELDA64_OK) {
-        return -1;
+    zelda64_stat(&st, rom, index, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
     }
 
     // If the buffer is smaller than the file, we have a problem.
     if (size < (size_t) st.file_size) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     // If this is a compressed file, we're going to have to decompress it.

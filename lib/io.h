@@ -32,19 +32,19 @@
 
 #define ZELDA64_SSIZE_MAX INT64_MAX
 
-typedef zelda64_ssize_t
+typedef size_t
 (zelda64_read_func)(void* opaque,
                     void* buffer, size_t size,
                     zelda64_offset_t offset,
                     struct zelda64_error* error);
 
-typedef zelda64_ssize_t
+typedef size_t
 (zelda64_write_func)(void* opaque,
                      void const* buffer, size_t size,
                      zelda64_offset_t offset,
                      struct zelda64_error* error);
 
-typedef zelda64_ssize_t
+typedef size_t
 (zelda64_size_func)(void* opaque, struct zelda64_error* error);
 
 typedef void
@@ -58,76 +58,70 @@ struct zelda64_io {
     void* opaque;
 };
 
-static inline zelda64_ssize_t
+static inline size_t
 zelda64_io_read(struct zelda64_io const* io,
                 void* buffer, size_t const size,
                 zelda64_offset_t const offset,
                 struct zelda64_error* error) {
     if (io == NULL || io->read == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
-    }
-
-    // Can we return a read count at all?
-    if (size > ZELDA64_SSIZE_MAX) {
-        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
-        return -1;
+        return 0;
     }
 
     // An empty buffer is okay, so long as we're reading nothing.
     if (buffer == NULL && size > 0) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     return io->read(io->opaque, buffer, size, offset, error);
 }
 
-static inline zelda64_ssize_t
+static inline size_t
 zelda64_io_write(struct zelda64_io* io,
                  void const* buffer, size_t const size,
                  zelda64_offset_t const offset,
                  struct zelda64_error* error) {
     if (io == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
     if (io->write == NULL) {
         zelda64_set_error(error, ZELDA64_UNSUPPORTED);
-        return -1;
+        return 0;
     }
 
     if (buffer == NULL && size > 0) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     return io->write(io->opaque, buffer, size, offset, error);
 }
 
-static inline zelda64_ssize_t
+static inline size_t
 zelda64_io_read_exact(struct zelda64_io const* io,
                       void* buffer, size_t const size,
                       zelda64_offset_t const offset,
                       struct zelda64_error* error) {
-    zelda64_ssize_t const bytes_in = zelda64_io_read(io, buffer, size, offset, error);
-    if (bytes_in < 0) {
-        return bytes_in;
+    size_t const bytes_in = zelda64_io_read(io, buffer, size, offset, error);
+    if (error->result != ZELDA64_OK) {
+        return 0;
     }
 
-    if (bytes_in != (zelda64_ssize_t) size) {
+    if (bytes_in != size) {
         zelda64_set_error(error, ZELDA64_TRUNCATED);
-        return -1;
+        return 0;
     }
 
     return bytes_in;
 }
 
-static inline zelda64_ssize_t
+static inline size_t
 zelda64_io_size(struct zelda64_io const* io, struct zelda64_error* error) {
     if (io == NULL || io->size == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
-        return -1;
+        return 0;
     }
 
     return io->size(io->opaque, error);
