@@ -439,6 +439,10 @@ write_rom(struct zelda64_io* out_rom,
     // And write it to the ROM.
     zelda64_io_write(out_rom, check_code_buffer, sizeof check_code_buffer, 0x10, error);
     zelda64_free(layout->allocator, dmadata);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
     return rom_size;
 }
 
