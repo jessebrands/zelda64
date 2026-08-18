@@ -138,6 +138,12 @@ zelda64_io_close(struct zelda64_io* io, struct zelda64_allocator const allocator
 }
 
 void
+zelda64_io_fopen(struct zelda64_io* io,
+                    char const* filename,
+                    struct zelda64_allocator allocator,
+                    struct zelda64_error* error);
+
+void
 zelda64_io_fopen_ro(struct zelda64_io* io,
                     char const* filename,
                     struct zelda64_allocator allocator,

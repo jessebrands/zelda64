@@ -35,6 +35,12 @@ zelda64_file_read(void* opaque,
                   struct zelda64_error* error);
 
 static size_t
+zelda64_file_write(void* opaque,
+                   void const* buffer, size_t size,
+                   zelda64_offset_t offset,
+                   struct zelda64_error* error);
+
+static size_t
 zelda64_file_size(void* opaque, struct zelda64_error* error);
 
 static void
@@ -42,6 +48,40 @@ zelda64_file_close(void* opaque, struct zelda64_allocator allocator);
 
 static void
 zelda64_file_close_non_owning(void* opaque, struct zelda64_allocator allocator);
+
+void
+zelda64_io_fopen(struct zelda64_io* io,
+                 char const* filename,
+                 struct zelda64_allocator allocator,
+                 struct zelda64_error* error) {
+    if (io == NULL || filename == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return;
+    }
+
+    // Allocate the file state struct.
+    struct zelda64_io_file* file = zelda64_alloc(allocator, sizeof *file);
+    if (file == NULL) {
+        zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
+        return;
+    }
+
+    file->handle = fopen(filename, "w+b");
+    if (file->handle == NULL) {
+        int const sys_error = errno;
+        zelda64_free(allocator, file);
+        zelda64_set_sys_error(error, ZELDA64_ERRNO, sys_error);
+        return;
+    }
+
+    *io = (struct zelda64_io){
+        .read = zelda64_file_read,
+        .write = zelda64_file_write,
+        .size = zelda64_file_size,
+        .close = zelda64_file_close,
+        .opaque = file
+    };
+}
 
 void
 zelda64_io_fopen_ro(struct zelda64_io* io,
@@ -139,6 +179,40 @@ zelda64_file_read(void* opaque,
     }
 
     return in_count;
+}
+
+static size_t
+zelda64_file_write(void* opaque,
+                   void const* buffer, size_t const size,
+                   zelda64_offset_t const offset,
+                   struct zelda64_error* error) {
+    struct zelda64_io_file const* file = opaque;
+
+    // Start from a clean slate.
+    clearerr(file->handle);
+    errno = 0;
+
+    // Seek to the offset given, however...
+    // Standard C is pretty restricted when it comes to these things!
+    if (offset > LONG_MAX) {
+        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+        return 0;
+    }
+    if (fseek(file->handle, (long) offset, SEEK_SET) != 0) {
+        zelda64_set_errno(error);
+        return 0;
+    }
+
+    // Perform the write and check for errors.
+    errno = 0;
+    size_t const out_count = fwrite(buffer, sizeof(uint8_t), size, file->handle);
+    int const sys_error = errno; // capture errno cause ferror can set it
+    if (ferror(file->handle)) {
+        zelda64_set_sys_error(error, ZELDA64_ERRNO, sys_error);
+        return 0;
+    }
+
+    return out_count;
 }
 
 static size_t
