@@ -227,7 +227,7 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
 
 size_t
 zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }
@@ -243,7 +243,7 @@ zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
 
 struct zelda64_dmadata const*
 zelda64_dmadata(struct zelda64_rom const* rom, struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }

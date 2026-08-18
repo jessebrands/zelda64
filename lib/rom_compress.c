@@ -75,7 +75,7 @@ compress_rom(struct zelda64_rom const* rom,
 
 struct zelda64_dmadata_layout*
 zelda64_compress(struct zelda64_rom const* rom, struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }

@@ -73,7 +73,7 @@ decompress_rom(struct zelda64_rom const* rom,
 
 struct zelda64_dmadata_layout*
 zelda64_decompress(struct zelda64_rom const* rom, struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }
@@ -89,7 +89,7 @@ struct zelda64_dmadata_layout*
 zelda64_decompress_with_allocator(struct zelda64_rom const* rom,
                                   struct zelda64_allocator const allocator,
                                   struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }

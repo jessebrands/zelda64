@@ -26,7 +26,7 @@ void
 zelda64_layout_set_operation(struct zelda64_dmadata_layout* layout,
                              zelda64_index_t const index, enum zelda64_operation const operation,
                              struct zelda64_error* error) {
-    struct zelda64_error local_error;
+    struct zelda64_error local_error = {0};
     if (error == NULL) {
         error = &local_error;
     }
