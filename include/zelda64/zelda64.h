@@ -42,6 +42,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+
+
 #endif
 
 typedef size_t zelda64_index_t;
@@ -151,6 +154,15 @@ zelda64_open(char const* filename, struct zelda64_error* error);
 ZELDA64_API struct zelda64_rom*
 zelda64_open_with_allocator(char const* filename, struct zelda64_allocator allocator, struct zelda64_error* error);
 
+ZELDA64_API struct zelda64_rom*
+zelda64_open_buffer(uint8_t const* data, size_t size,
+                    struct zelda64_error* error);
+
+ZELDA64_API struct zelda64_rom*
+zelda64_open_buffer_with_allocator(uint8_t const* data, size_t size,
+                                   struct zelda64_allocator allocator,
+                                   struct zelda64_error* error);
+
 /*
  * Closes a Nintendo 64 Zelda ROM and releases all associated resources.
  */
@@ -255,6 +267,12 @@ zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
               struct zelda64_write_options const* options,
               struct zelda64_error* error);
+
+ZELDA64_API size_t
+zelda64_write_buffer(uint8_t* data, size_t size,
+                     struct zelda64_dmadata_layout const* layout,
+                     struct zelda64_write_options const* options,
+                     struct zelda64_error* error);
 
 /*
  * Returns a human-readable string for an error.

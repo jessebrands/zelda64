@@ -48,14 +48,16 @@ set(LIBZELDA64_PRIVATE_HEADERS
         lib/bytes.h
         lib/crc32c.h
         lib/error.h
+        lib/io.h
         lib/layout.h
-        lib/rom.h
-        lib/io.h)
+        lib/rom.h)
 
 set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/crc32c.c
         lib/error.c
+        lib/io_buffer.c
+        lib/io_file.c
         lib/layout_bound.c
         lib/layout_free.c
         lib/layout_operation.c
@@ -67,7 +69,6 @@ set(LIBZELDA64_SOURCES
         lib/rom_open.c
         lib/rom_read.c
         lib/rom_stat.c
-        lib/io_file.c
         lib/version.c)
 
 add_library(libzelda64 SHARED

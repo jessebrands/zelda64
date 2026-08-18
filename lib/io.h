@@ -156,4 +156,16 @@ zelda64_io_from_file_ro(struct zelda64_io* io,
                         struct zelda64_allocator allocator,
                         struct zelda64_error* error);
 
+void
+zelda64_io_from_buffer(struct zelda64_io* io,
+                       uint8_t* data, size_t size,
+                       struct zelda64_allocator allocator,
+                       struct zelda64_error* error);
+
+void
+zelda64_io_from_const_buffer(struct zelda64_io* io,
+                             uint8_t const* data, size_t size,
+                             struct zelda64_allocator allocator,
+                             struct zelda64_error* error);
+
 #endif //LIBZELDA64_IO_H

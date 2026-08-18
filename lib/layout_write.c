@@ -467,3 +467,28 @@ zelda64_write(char const* filename,
     zelda64_io_close(&out_file);
     return bytes_out;
 }
+
+size_t
+zelda64_write_buffer(uint8_t* data, size_t const size,
+                     struct zelda64_dmadata_layout const* layout,
+                     struct zelda64_write_options const* options,
+                     struct zelda64_error* error) {
+    struct zelda64_error local_error = {0};
+    if (error == NULL) {
+        error = &local_error;
+    }
+    if ((data == NULL && size > 0) || layout == NULL || options == NULL) {
+        zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
+        return 0;
+    }
+
+    struct zelda64_io out_buffer = {0};
+    zelda64_io_from_buffer(&out_buffer, data, size, layout->allocator, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
+    size_t const bytes_out = write_rom(&out_buffer, layout, options, error);
+    zelda64_io_close(&out_buffer);
+    return bytes_out;
+}
