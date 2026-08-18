@@ -30,9 +30,9 @@ zelda64_read_u32(uint8_t const* p) {
     assert(p != NULL);
 
     return ((uint32_t) p[0] << 24)
-         | ((uint32_t) p[1] << 16)
-         | ((uint32_t) p[2] << 8)
-         | ((uint32_t) p[3]);
+           | ((uint32_t) p[1] << 16)
+           | ((uint32_t) p[2] << 8)
+           | ((uint32_t) p[3]);
 }
 
 static inline void
@@ -62,6 +62,22 @@ zelda64_write_u64(uint8_t* p, uint64_t const n) {
 static inline uint32_t
 zelda64_rot32(uint32_t const a, unsigned const b) {
     return a << b | a >> ((32 - b) & 31);
+}
+
+static inline uint32_t
+zelda64_align16(uint32_t const n) {
+    return (n + 15u) & -16u;
+}
+
+static inline uint32_t
+zelda64_ceil_pow2(uint32_t size) {
+    size -= 1;
+    size |= size >> 1;
+    size |= size >> 2;
+    size |= size >> 4;
+    size |= size >> 8;
+    size |= size >> 16;
+    return size + 1;
 }
 
 #endif //LIBZELDA64_BYTES_H

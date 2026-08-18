@@ -315,21 +315,10 @@ write_dmadata(FILE* file, uint32_t const position,
     return ZELDA64_OK;
 }
 
-static uint32_t
-round_up_pow2(uint32_t size) {
-    size -= 1;
-    size |= size >> 1;
-    size |= size >> 2;
-    size |= size >> 4;
-    size |= size >> 8;
-    size |= size >> 16;
-    return size + 1;
-}
-
 static zelda64_ssize_t
 pad_file(FILE* file, uint32_t position, enum zelda64_pad const pad,
          struct zelda64_error* error) {
-    uint32_t const end = round_up_pow2(position);
+    uint32_t const end = zelda64_ceil_pow2(position);
     if (end > LONG_MAX) {
         zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
         return -1;
@@ -459,7 +448,7 @@ zelda64_write(char const* filename,
             return error->result;
         }
 
-        uint32_t const size = ((uint32_t) bytes_out + 15) & -16u;
+        uint32_t const size = zelda64_align16((uint32_t) bytes_out);
         dmadata[i] = (struct zelda64_dmadata){
             .vrom_start = entry->vrom_start,
             .vrom_end = entry->vrom_end,
