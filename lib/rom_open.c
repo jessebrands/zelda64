@@ -92,6 +92,7 @@ zelda64_open_with_allocator(char const* filename,
         return NULL;
     }
 
+    zelda64_clear_error(error);
     return rom;
 }
 
@@ -124,6 +125,7 @@ zelda64_open_buffer_with_allocator(uint8_t const* data, size_t const size,
         return NULL;
     }
 
+    zelda64_clear_error(error);
     return rom;
 }
 
@@ -150,5 +152,11 @@ zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return 0;
     }
 
-    return zelda64_io_size(&rom->io, error);
+    size_t const size = zelda64_io_size(&rom->io, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
+    zelda64_clear_error(error);
+    return size;
 }

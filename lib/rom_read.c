@@ -130,7 +130,13 @@ zelda64_read_storage(void* buffer, size_t const size,
         return 0;
     }
 
-    return read_bytes(buffer, size, rom, offset, &st, error);
+    size_t const bytes_in = read_bytes(buffer, size, rom, offset, &st, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
+    zelda64_clear_error(error);
+    return bytes_in;
 }
 
 size_t
@@ -167,5 +173,11 @@ zelda64_read_file(void* buffer, size_t const size,
     }
 
     // if this is a regular file, we can just dump the bytes.
-    return read_bytes(buffer, size, rom, 0, &st, error);
+    size_t const bytes_in = read_bytes(buffer, size, rom, 0, &st, error);
+    if (ZELDA64_FAILED(error)) {
+        return 0;
+    }
+
+    zelda64_clear_error(error);
+    return bytes_in;
 }

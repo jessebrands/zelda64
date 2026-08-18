@@ -238,6 +238,7 @@ zelda64_file_count(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return 0; // Valid ROMs always have 3 or more files, this is OK.
     }
 
+    zelda64_clear_error(error);
     return rom->dmadata_info.count;
 }
 
@@ -254,6 +255,7 @@ zelda64_dmadata(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return NULL;
     }
 
+    zelda64_clear_error(error);
     return rom->dmadata;
 }
 
@@ -277,5 +279,6 @@ zelda64_dmadata_entry(struct zelda64_rom const* rom, zelda64_index_t const index
         return NULL;
     }
 
+    zelda64_clear_error(error);
     return &rom->dmadata[index];
 }

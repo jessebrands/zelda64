@@ -39,6 +39,13 @@ zelda64_set_error(struct zelda64_error* error, enum zelda64_result const result)
     return result;
 }
 
+static inline void
+zelda64_clear_error(struct zelda64_error* error) {
+    assert(error != NULL);
+    error->result = ZELDA64_OK;
+    error->sys_error = 0;
+}
+
 static inline enum zelda64_result
 zelda64_set_sys_error(struct zelda64_error* error,
                       enum zelda64_result const result, int const sys_error) {

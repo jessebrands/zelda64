@@ -131,5 +131,6 @@ zelda64_stat(struct zelda64_stat* st,
     }
 
     *st = stat;
+    zelda64_clear_error(error);
     return ZELDA64_OK;
 }

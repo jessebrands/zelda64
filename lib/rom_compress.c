@@ -121,5 +121,6 @@ zelda64_compress_with_allocator(struct zelda64_rom const* rom,
         .entries = entries,
     };
 
+    zelda64_clear_error(error);
     return layout;
 }

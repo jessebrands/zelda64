@@ -166,5 +166,6 @@ zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
         bound = zelda64_ceil_pow2(bound);
     }
 
+    zelda64_clear_error(error);
     return bound;
 }
