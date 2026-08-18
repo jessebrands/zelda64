@@ -32,12 +32,12 @@
 #define CHUNK_SIZE 1024
 
 static size_t
-copy_rom_file(FILE* file, uint32_t const position,
-              struct zelda64_rom const* rom, zelda64_index_t const index,
+copy_rom_file(struct zelda64_io* out_file, uint32_t const position,
+              struct zelda64_rom const* in_rom, zelda64_index_t const index,
               struct zelda64_error* error) {
     // Get information about this ROM file.
     struct zelda64_stat st;
-    zelda64_stat(&st, rom, index, error);
+    zelda64_stat(&st, in_rom, index, error);
     if (ZELDA64_FAILED(error)) {
         return 0;
     }
@@ -47,43 +47,35 @@ copy_rom_file(FILE* file, uint32_t const position,
         return 0;
     }
 
-    // Seek to the write position that this file belongs to.
-    if (fseek(file, position, SEEK_SET) != 0) {
-        zelda64_set_errno(error);
-        return 0;
-    }
-
-    uint32_t bytes_out = 0;
+    size_t bytes_out = 0;
     uint8_t chunk[CHUNK_SIZE];
     while (bytes_out < st.size) {
-        uint32_t const available = st.size - bytes_out;
-        uint32_t const have = available < CHUNK_SIZE ? available : CHUNK_SIZE;
-
-        zelda64_read_storage(chunk, have, rom, index, bytes_out, error);
+        size_t const available = st.size - bytes_out;
+        size_t const have = available < CHUNK_SIZE ? available : CHUNK_SIZE;
+        zelda64_read_storage(chunk, have, in_rom, index, (uint32_t) bytes_out, error);
         if (ZELDA64_FAILED(error)) {
             return 0;
         }
 
-        if (fwrite(chunk, sizeof chunk[0], have, file) != have) {
-            zelda64_set_errno(error);
+        size_t const offset = position + bytes_out;
+        bytes_out += zelda64_io_write(out_file, chunk, have, offset, error);
+        if (ZELDA64_FAILED(error)) {
             return 0;
         }
-
-        bytes_out += have;
     }
 
     return bytes_out;
 }
 
 static size_t
-copy_entry(FILE* file, uint32_t const position,
+copy_entry(struct zelda64_io* out_file, uint32_t const position,
            struct zelda64_layout_entry const* entry,
            struct zelda64_error* error) {
     switch (entry->from_type) {
         case ZELDA64_FROM_ROM: {
-            struct zelda64_rom const* rom = entry->from.rom.rom;
+            struct zelda64_rom const* in_rom = entry->from.rom.rom;
             zelda64_index_t const index = entry->from.rom.index;
-            return copy_rom_file(file, position, rom, index, error);
+            return copy_rom_file(out_file, position, in_rom, index, error);
         }
     }
 
@@ -92,13 +84,13 @@ copy_entry(FILE* file, uint32_t const position,
 }
 
 static size_t
-compress_rom_file(FILE* file, uint32_t const position,
-                  struct zelda64_rom const* rom, zelda64_index_t const index,
+compress_rom_file(struct zelda64_io* out_file, uint32_t const position,
+                  struct zelda64_rom const* in_rom, zelda64_index_t const index,
                   struct zelda64_allocator const allocator,
                   struct zelda64_error* error) {
     // Get information about this ROM file.
     struct zelda64_stat st;
-    zelda64_stat(&st, rom, index, error);
+    zelda64_stat(&st, in_rom, index, error);
     if (ZELDA64_FAILED(error)) {
         return 0;
     }
@@ -121,21 +113,15 @@ compress_rom_file(FILE* file, uint32_t const position,
         return 0;
     }
 
-    // Seek to the write position that this file belongs to.
-    if (fseek(file, position, SEEK_SET) != 0) {
-        zelda64_set_errno(error);
-        yaz0_compress_end(&stream);
-        return 0;
-    }
-
     uint8_t in_chunk[CHUNK_SIZE];
     uint8_t out_chunk[CHUNK_SIZE];
     uint32_t bytes_in = 0;
+    size_t bytes_out = 0;
     do {
         // Read data from the ROM into our buffer.
         uint32_t const available = st.size - bytes_in;
         uint32_t const want = available < CHUNK_SIZE ? available : CHUNK_SIZE;
-        zelda64_read_storage(in_chunk, want, rom, index, bytes_in, error);
+        zelda64_read_storage(in_chunk, want, in_rom, index, bytes_in, error);
         if (ZELDA64_FAILED(error)) {
             yaz0_compress_end(&stream);
             return 0;
@@ -161,8 +147,9 @@ compress_rom_file(FILE* file, uint32_t const position,
             }
 
             size_t const have = sizeof out_chunk - stream.avail_out;
-            if (fwrite(out_chunk, sizeof *out_chunk, have, file) != have) {
-                zelda64_set_errno(error);
+            size_t const offset = position + bytes_out;
+            bytes_out += zelda64_io_write(out_file, out_chunk, have, offset, error);
+            if (ZELDA64_FAILED(error)) {
                 yaz0_compress_end(&stream);
                 return 0;
             }
@@ -174,15 +161,15 @@ compress_rom_file(FILE* file, uint32_t const position,
 }
 
 static size_t
-compress_entry(FILE* file, uint32_t const position,
+compress_entry(struct zelda64_io* out_file, uint32_t const position,
                struct zelda64_layout_entry const* entry,
                struct zelda64_allocator const allocator,
                struct zelda64_error* error) {
     switch (entry->from_type) {
         case ZELDA64_FROM_ROM: {
-            struct zelda64_rom const* rom = entry->from.rom.rom;
+            struct zelda64_rom const* in_rom = entry->from.rom.rom;
             zelda64_index_t const index = entry->from.rom.index;
-            return compress_rom_file(file, position, rom, index, allocator, error);
+            return compress_rom_file(out_file, position, in_rom, index, allocator, error);
         }
     }
 
@@ -191,13 +178,13 @@ compress_entry(FILE* file, uint32_t const position,
 }
 
 static size_t
-decompress_rom_file(FILE* file, uint32_t const position,
-                    struct zelda64_rom const* rom, zelda64_index_t const index,
+decompress_rom_file(struct zelda64_io* out_file, uint32_t const position,
+                    struct zelda64_rom const* in_rom, zelda64_index_t const index,
                     struct zelda64_allocator const allocator,
                     struct zelda64_error* error) {
     // Get information about this ROM file.
     struct zelda64_stat st;
-    zelda64_stat(&st, rom, index, error);
+    zelda64_stat(&st, in_rom, index, error);
     if (ZELDA64_FAILED(error)) {
         return 0;
     }
@@ -220,21 +207,15 @@ decompress_rom_file(FILE* file, uint32_t const position,
         return 0;
     }
 
-    // Seek to the write position that this file belongs to.
-    if (fseek(file, position, SEEK_SET) != 0) {
-        zelda64_set_errno(error);
-        yaz0_decompress_end(&stream);
-        return 0;
-    }
-
     uint8_t in_chunk[CHUNK_SIZE];
     uint8_t out_chunk[CHUNK_SIZE];
     uint32_t bytes_in = 0;
+    size_t bytes_out = 0;
     do {
         // Read data from the ROM into our buffer.
         uint32_t const available = st.size - bytes_in;
         uint32_t const want = available < CHUNK_SIZE ? available : CHUNK_SIZE;
-        zelda64_read_storage(in_chunk, want, rom, index, bytes_in, error);
+        zelda64_read_storage(in_chunk, want, in_rom, index, bytes_in, error);
         if (ZELDA64_FAILED(error)) {
             yaz0_decompress_end(&stream);
             return 0;
@@ -260,8 +241,9 @@ decompress_rom_file(FILE* file, uint32_t const position,
             }
 
             size_t const have = sizeof out_chunk - stream.avail_out;
-            if (fwrite(out_chunk, sizeof *out_chunk, have, file) != have) {
-                zelda64_set_errno(error);
+            size_t const offset = position + bytes_out;
+            bytes_out += zelda64_io_write(out_file, out_chunk, have, offset, error);
+            if (ZELDA64_FAILED(error)) {
                 yaz0_decompress_end(&stream);
                 return 0;
             }
@@ -273,7 +255,7 @@ decompress_rom_file(FILE* file, uint32_t const position,
 }
 
 static size_t
-decompress_entry(FILE* file, uint32_t const position,
+decompress_entry(struct zelda64_io* out_file, uint32_t const position,
                  struct zelda64_layout_entry const* entry,
                  struct zelda64_allocator const allocator,
                  struct zelda64_error* error) {
@@ -281,7 +263,7 @@ decompress_entry(FILE* file, uint32_t const position,
         case ZELDA64_FROM_ROM: {
             struct zelda64_rom const* rom = entry->from.rom.rom;
             zelda64_index_t const index = entry->from.rom.index;
-            return decompress_rom_file(file, position, rom, index, allocator, error);
+            return decompress_rom_file(out_file, position, rom, index, allocator, error);
         }
     }
 
@@ -292,14 +274,10 @@ decompress_entry(FILE* file, uint32_t const position,
 #define WRITE_COUNT 128
 
 static void
-write_dmadata(FILE* file, uint32_t const position,
+write_dmadata(struct zelda64_io* out_file, uint32_t const position,
               struct zelda64_dmadata const* dmadata, size_t const count,
               struct zelda64_error* error) {
-    if (fseek(file, (long) position, SEEK_SET) != 0) {
-        zelda64_set_errno(error);
-        return;
-    }
-
+    zelda64_offset_t offset = position;
     uint8_t chunk[ZELDA64_DMA_ENTRY_SIZE * WRITE_COUNT];
     for (size_t i = 0; i < count; i += WRITE_COUNT) {
         size_t const remaining = count - i;
@@ -313,25 +291,18 @@ write_dmadata(FILE* file, uint32_t const position,
             zelda64_write_u32(&p[12], dmadata[i + j].rom_end);
         }
 
-        size_t const bytes = have * ZELDA64_DMA_ENTRY_SIZE;
-        if (fwrite(chunk, 1, bytes, file) != bytes) {
-            zelda64_set_errno(error);
+        size_t const bytes_out = have * ZELDA64_DMA_ENTRY_SIZE;
+        offset += zelda64_io_write(out_file, chunk, bytes_out, offset, error);
+        if (ZELDA64_FAILED(error)) {
             return;
         }
     }
 }
 
 static size_t
-pad_file(FILE* file, uint32_t position, enum zelda64_pad const pad,
+pad_file(struct zelda64_io* out_file, uint32_t position, enum zelda64_pad const pad,
          struct zelda64_error* error) {
     uint32_t const end = zelda64_ceil_pow2(position);
-
-    // Seek to the position.
-    if (fseek(file, (long) position, SEEK_SET) != 0) {
-        zelda64_set_errno(error);
-        return 0;
-    }
-
     uint8_t chunk[CHUNK_SIZE];
     size_t bytes_out = 0;
     while ((position + bytes_out) < end) {
@@ -346,13 +317,10 @@ pad_file(FILE* file, uint32_t position, enum zelda64_pad const pad,
                            : 0;
         }
 
-        // And append them to the end of the file.
-        if (fwrite(chunk, 1, want, file) != want) {
-            zelda64_set_errno(error);
+        bytes_out += zelda64_io_write(out_file, chunk, want, offset, error);
+        if (ZELDA64_FAILED(error)) {
             return 0;
         }
-
-        bytes_out += want;
     }
 
     return bytes_out;
@@ -384,20 +352,10 @@ zelda64_write(char const* filename,
     }
 
     // Create our new ROM.
-    FILE* file = fopen(filename, "w+b");
-    if (file == NULL) {
-        zelda64_set_errno(error);
-        zelda64_free(layout->allocator, dmadata);
-        return;
-    }
-
-    // Open this read-only I/O over the ROM for later.
-    struct zelda64_io out_rom;
-    zelda64_io_from_file_ro(&out_rom, file, layout->allocator, error);
+    struct zelda64_io out_file = {0};
+    zelda64_io_fopen(&out_file, filename, layout->allocator, error);
     if (ZELDA64_FAILED(error)) {
-        fclose(file);
         zelda64_free(layout->allocator, dmadata);
-        return;
     }
 
     // Enter the writing loop, this is where things get complex.
@@ -430,15 +388,15 @@ zelda64_write(char const* filename,
         size_t bytes_out = 0;
         switch (entry->operation) {
             case ZELDA64_OP_COPY:
-                bytes_out = copy_entry(file, rom_start, entry, error);
+                bytes_out = copy_entry(&out_file, rom_start, entry, error);
                 break;
 
             case ZELDA64_OP_COMPRESS:
-                bytes_out = compress_entry(file, rom_start, entry, layout->allocator, error);
+                bytes_out = compress_entry(&out_file, rom_start, entry, layout->allocator, error);
                 break;
 
             case ZELDA64_OP_DECOMPRESS:
-                bytes_out = decompress_entry(file, rom_start, entry, layout->allocator, error);
+                bytes_out = decompress_entry(&out_file, rom_start, entry, layout->allocator, error);
                 break;
 
             default:
@@ -448,7 +406,7 @@ zelda64_write(char const* filename,
 
         if (ZELDA64_FAILED(error)) {
             zelda64_free(layout->allocator, dmadata);
-            fclose(file);
+            zelda64_io_close(&out_file, layout->allocator);
             return;
         }
 
@@ -465,10 +423,10 @@ zelda64_write(char const* filename,
 
     // Pad out the rest of the bytes in the ROM, if that was requested.
     if (options->pad != ZELDA64_PAD_NONE) {
-        pad_file(file, position, options->pad, error);
+        pad_file(&out_file, position, options->pad, error);
         if (ZELDA64_FAILED(error)) {
             zelda64_free(layout->allocator, dmadata);
-            fclose(file);
+            zelda64_io_close(&out_file, layout->allocator);
             return;
         }
     }
@@ -476,24 +434,21 @@ zelda64_write(char const* filename,
     // Now we must write the DMADATA to the ROM.
     // The DMADATA is at entry 0x0002, so we need to fit exactly there.
     struct zelda64_dmadata const* e_dmadata = &dmadata[0x0002];
-    write_dmadata(file, e_dmadata->vrom_start, dmadata, count, error);
+    write_dmadata(&out_file, e_dmadata->vrom_start, dmadata, count, error);
     if (ZELDA64_FAILED(error)) {
         zelda64_free(layout->allocator, dmadata);
-        fclose(file);
+        zelda64_io_close(&out_file, layout->allocator);
         return;
     }
 
     // Calculate the ROM check code.
-    uint64_t const check_code = zelda64_calculate_check_code(&out_rom, dmadata, count, error);
+    uint64_t const check_code = zelda64_calculate_check_code(&out_file, dmadata, count, error);
 
     uint8_t check_code_buffer[8];
     zelda64_write_u64(check_code_buffer, check_code);
 
     // And write it to the ROM.
-    fseek(file, 0x10, SEEK_SET);
-    fwrite(check_code_buffer, sizeof check_code_buffer[0], sizeof check_code_buffer, file);
-
-    // We're done, clean up!
+    zelda64_io_write(&out_file, check_code_buffer, sizeof check_code_buffer, 0x10, error);
     zelda64_free(layout->allocator, dmadata);
-    fclose(file);
+    zelda64_io_close(&out_file, layout->allocator);
 }
