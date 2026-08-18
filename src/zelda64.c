@@ -20,8 +20,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <zelda64/zelda64.h>
 
+#include "decompress.h"
+#include "log.h"
 #include "options.h"
 
 #define EXIT_USAGE 2
@@ -88,5 +91,45 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    return EXIT_SUCCESS;
+    if (options.in_filename == NULL) {
+        log_error("no input rom");
+    }
+
+    int status = EXIT_SUCCESS;
+    struct zelda64_error error = {0};
+
+    // Open the input ROM.
+    struct zelda64_rom* rom = zelda64_open(options.in_filename, &error);
+    if (rom == NULL) {
+        logf_error("cannot open %s: %s", options.in_filename, zelda64_error_string(&error));
+        return EXIT_FAILURE;
+    }
+
+    // Present a greeting.
+    char compressor_name[128] = {0};
+    zelda64_compressor_name(compressor_name, sizeof compressor_name);
+    logf_info("zelda64 %s using %s", zelda64_version_string(), compressor_name);
+    log_info("Copyright (C) 2026 Jesse Gerard Brands");
+
+    // Loop over the stages
+    clock_t const start = clock();
+    for (size_t i = 0; i < options.stage_count; ++i) {
+        char const* out = (i + 1 == options.stage_count) ? options.out_filename : NULL;
+
+        switch (options.stages[i].stage) {
+            case ZELDA64_STAGE_DECOMPRESS:
+                status = run_decompress(&options.stages[i].as.decompress, rom, out);
+                break;
+        }
+        if (status != EXIT_SUCCESS) { break; }
+    }
+
+    clock_t const end = clock();
+    if (options.stage_count > 1) {
+        double const elapsed = (double)(end - start) / CLOCKS_PER_SEC;
+        logf_info("Finished in %.2f seconds", elapsed);
+    }
+
+    zelda64_close(rom);
+    return status;
 }
