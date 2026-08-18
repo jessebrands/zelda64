@@ -48,7 +48,9 @@ typedef size_t
 (zelda64_size_func)(void* opaque, struct zelda64_error* error);
 
 typedef void
-(zelda64_close_func)(void* opaque, struct zelda64_allocator allocator);
+(zelda64_close_func)(void* opaque,
+                     struct zelda64_allocator allocator,
+                     struct zelda64_error* error);
 
 struct zelda64_io {
     zelda64_read_func* read;
@@ -129,12 +131,12 @@ zelda64_io_size(struct zelda64_io const* io, struct zelda64_error* error) {
 }
 
 static inline void
-zelda64_io_close(struct zelda64_io* io) {
+zelda64_io_close(struct zelda64_io* io, struct zelda64_error* error) {
     if (io == NULL || io->close == NULL) {
         return;
     }
 
-    io->close(io->opaque, io->allocator);
+    io->close(io->opaque, io->allocator, error);
     io->opaque = NULL;
 }
 

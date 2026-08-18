@@ -33,7 +33,7 @@ open_from_io(struct zelda64_io io,
     struct zelda64_rom* rom = zelda64_alloc(allocator, sizeof *rom);
     if (rom == NULL) {
         zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
-        zelda64_io_close(&io);
+        zelda64_io_close(&io, NULL);
         return NULL;
     }
 
@@ -136,7 +136,7 @@ zelda64_close(struct zelda64_rom* rom) {
     }
 
     zelda64_free(rom->allocator, rom->dmadata);
-    zelda64_io_close(&rom->io);
+    zelda64_io_close(&rom->io, NULL);
     zelda64_free(rom->allocator, rom);
 }
 

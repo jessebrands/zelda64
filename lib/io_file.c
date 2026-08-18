@@ -44,10 +44,14 @@ static size_t
 zelda64_file_size(void* opaque, struct zelda64_error* error);
 
 static void
-zelda64_file_close(void* opaque, struct zelda64_allocator allocator);
+zelda64_file_close(void* opaque,
+                   struct zelda64_allocator allocator,
+                   struct zelda64_error* error);
 
 static void
-zelda64_file_close_non_owning(void* opaque, struct zelda64_allocator allocator);
+zelda64_file_close_non_owning(void* opaque,
+                              struct zelda64_allocator allocator,
+                              struct zelda64_error* error);
 
 void
 zelda64_io_fopen(struct zelda64_io* io,
@@ -244,14 +248,26 @@ zelda64_file_size(void* opaque, struct zelda64_error* error) {
 }
 
 static void
-zelda64_file_close(void* opaque, struct zelda64_allocator const allocator) {
+zelda64_file_close(void* opaque,
+                   struct zelda64_allocator const allocator,
+                   struct zelda64_error* error) {
+    struct zelda64_error local_error = {0};
+    if (error == NULL) {
+        error = &local_error;
+    }
+
     struct zelda64_io_file* file = opaque;
-    fclose(file->handle);
+    if (fclose(file->handle) != 0) {
+        zelda64_set_errno(error);
+    }
     zelda64_free(allocator, file);
 }
 
 static void
-zelda64_file_close_non_owning(void* opaque, struct zelda64_allocator const allocator) {
+zelda64_file_close_non_owning(void* opaque,
+                              struct zelda64_allocator const allocator,
+                              struct zelda64_error* error) {
+    (void) error;
     struct zelda64_io_file* file = opaque;
     zelda64_free(allocator, file);
 }

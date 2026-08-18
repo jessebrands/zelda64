@@ -43,7 +43,9 @@ static size_t
 zelda64_buffer_size(void* opaque, struct zelda64_error* error);
 
 static void
-zelda64_buffer_close(void* opaque, struct zelda64_allocator allocator);
+zelda64_buffer_close(void* opaque,
+                     struct zelda64_allocator allocator,
+                     struct zelda64_error* error);
 
 static struct zelda64_io_buffer*
 init_io_buffer(struct zelda64_allocator const allocator,
@@ -154,7 +156,10 @@ zelda64_buffer_size(void* opaque, struct zelda64_error* error) {
 }
 
 static void
-zelda64_buffer_close(void* opaque, struct zelda64_allocator allocator) {
+zelda64_buffer_close(void* opaque,
+                     struct zelda64_allocator const allocator,
+                     struct zelda64_error* error) {
+    (void) error;
     struct zelda64_io_buffer* buffer = opaque;
     zelda64_free(allocator, buffer);
 }
