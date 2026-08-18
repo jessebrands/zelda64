@@ -112,17 +112,19 @@ zelda64_buffer_read(void* opaque,
                     void* dst, size_t const size,
                     zelda64_offset_t const offset,
                     struct zelda64_error* error) {
+    (void) error;
     struct zelda64_io_buffer* buffer = opaque;
-    if (offset > buffer->size) {
-        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
+
+    // Over-reads are not an error.
+    if (offset >= buffer->size) {
         return 0;
     }
-    if (size > buffer->size - offset) {
-        zelda64_set_error(error, ZELDA64_OUT_OF_RANGE);
-        return 0;
-    }
-    memcpy(dst, &buffer->data[offset], size);
-    return size;
+
+    // Read as many bytes as we can into the buffer.
+    size_t const available = buffer->size - offset;
+    size_t const want = size < available ? size : available;
+    memcpy(dst, &buffer->data[offset], want);
+    return want;
 }
 
 static size_t
