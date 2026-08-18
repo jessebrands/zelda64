@@ -56,6 +56,7 @@ set(LIBZELDA64_SOURCES
         lib/allocator.c
         lib/crc32c.c
         lib/error.c
+        lib/layout_bound.c
         lib/layout_free.c
         lib/layout_operation.c
         lib/layout_write.c

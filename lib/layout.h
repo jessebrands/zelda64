@@ -34,6 +34,7 @@ struct zelda64_layout_entry {
 
     enum zelda64_operation operation;
     enum zelda64_from_type from_type;
+
     union {
         struct {
             struct zelda64_rom const* rom;
@@ -47,5 +48,9 @@ struct zelda64_dmadata_layout {
     size_t count;
     struct zelda64_layout_entry* entries;
 };
+
+uint32_t
+zelda64_layout_entry_bound(struct zelda64_layout_entry const* entry,
+                           struct zelda64_error* error);
 
 #endif //LIBZELDA64_LAYOUT_H

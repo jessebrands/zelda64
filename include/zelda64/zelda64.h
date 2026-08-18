@@ -242,6 +242,14 @@ zelda64_layout_set_operation(struct zelda64_dmadata_layout* layout,
                              zelda64_index_t index, enum zelda64_operation operation,
                              struct zelda64_error* error);
 
+/*
+ * Calculates the maximum possible output size in bytes for the layout.
+ */
+ZELDA64_API uint32_t
+zelda64_write_bound(struct zelda64_dmadata_layout const* layout,
+                    struct zelda64_write_options const* options,
+                    struct zelda64_error* error);
+
 ZELDA64_API enum zelda64_result
 zelda64_write(char const* filename,
               struct zelda64_dmadata_layout const* layout,
