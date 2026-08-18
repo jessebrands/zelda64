@@ -18,8 +18,8 @@
  * along with zelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBZELDA64_OPTIONS_H
-#define LIBZELDA64_OPTIONS_H
+#ifndef ZELDA64_OPTIONS_H
+#define ZELDA64_OPTIONS_H
 
 #include <zelda64/zelda64.h>
 
@@ -60,4 +60,4 @@ struct zelda64_options {
 enum zelda64_parse_result
 parse_options(struct zelda64_options* options, int argc, char** argv);
 
-#endif //LIBZELDA64_OPTIONS_H
+#endif //ZELDA64_OPTIONS_H
