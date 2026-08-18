@@ -40,8 +40,8 @@ read_bytes(void* buffer, size_t const size,
     // Set up the read.
     size_t const available = st->size - offset;
     size_t const want = available < size ? available : size;
-    return zelda64_source_read(
-        &rom->source,
+    return zelda64_io_read(
+        &rom->io,
         buffer, want,
         (zelda64_offset_t) st->offset + offset,
         error

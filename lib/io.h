@@ -1,5 +1,5 @@
 /*
- * source.h: data source abstraction
+ * io.h: I/O abstraction
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of libzelda64.
@@ -18,8 +18,8 @@
  * along with libzelda64. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LIBZELDA64_SOURCE_H
-#define LIBZELDA64_SOURCE_H
+#ifndef LIBZELDA64_IO_H
+#define LIBZELDA64_IO_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -44,7 +44,7 @@ typedef zelda64_ssize_t
 typedef void
 (zelda64_close_func)(void* opaque, struct zelda64_allocator allocator);
 
-struct zelda64_source {
+struct zelda64_io {
     zelda64_read_func* read;
     zelda64_size_func* size;
     zelda64_close_func* close;
@@ -52,11 +52,11 @@ struct zelda64_source {
 };
 
 static inline zelda64_ssize_t
-zelda64_source_read(struct zelda64_source const* source,
-                    void* buffer, size_t const size,
-                    zelda64_offset_t const offset,
-                    struct zelda64_error* error) {
-    if (source == NULL || source->read == NULL) {
+zelda64_io_read(struct zelda64_io const* io,
+                void* buffer, size_t const size,
+                zelda64_offset_t const offset,
+                struct zelda64_error* error) {
+    if (io == NULL || io->read == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return -1;
     }
@@ -73,15 +73,15 @@ zelda64_source_read(struct zelda64_source const* source,
         return -1;
     }
 
-    return source->read(source->opaque, buffer, size, offset, error);
+    return io->read(io->opaque, buffer, size, offset, error);
 }
 
 static inline zelda64_ssize_t
-zelda64_source_read_exact(struct zelda64_source const* source,
-                          void* buffer, size_t const size,
-                          zelda64_offset_t const offset,
-                          struct zelda64_error* error) {
-    zelda64_ssize_t const bytes_in = zelda64_source_read(source, buffer, size, offset, error);
+zelda64_io_read_exact(struct zelda64_io const* io,
+                      void* buffer, size_t const size,
+                      zelda64_offset_t const offset,
+                      struct zelda64_error* error) {
+    zelda64_ssize_t const bytes_in = zelda64_io_read(io, buffer, size, offset, error);
     if (bytes_in < 0) {
         return bytes_in;
     }
@@ -95,35 +95,35 @@ zelda64_source_read_exact(struct zelda64_source const* source,
 }
 
 static inline zelda64_ssize_t
-zelda64_source_size(struct zelda64_source const* source, struct zelda64_error* error) {
-    if (source == NULL || source->size == NULL) {
+zelda64_io_size(struct zelda64_io const* io, struct zelda64_error* error) {
+    if (io == NULL || io->size == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return -1;
     }
 
-    return source->size(source->opaque, error);
+    return io->size(io->opaque, error);
 }
 
 static inline void
-zelda64_source_close(struct zelda64_source* source, struct zelda64_allocator const allocator) {
-    if (source == NULL || source->close == NULL) {
+zelda64_io_close(struct zelda64_io* io, struct zelda64_allocator const allocator) {
+    if (io == NULL || io->close == NULL) {
         return;
     }
 
-    source->close(source->opaque, allocator);
-    source->opaque = NULL;
+    io->close(io->opaque, allocator);
+    io->opaque = NULL;
 }
 
 int
-zelda64_source_file_open(struct zelda64_source* source,
-                         char const* filename,
-                         struct zelda64_allocator allocator,
-                         struct zelda64_error* error);
+zelda64_io_fopen_ro(struct zelda64_io* io,
+                    char const* filename,
+                    struct zelda64_allocator allocator,
+                    struct zelda64_error* error);
 
 enum zelda64_result
-zelda64_source_file_from(struct zelda64_source* source,
-                         FILE* handle,
-                         struct zelda64_allocator allocator,
-                         struct zelda64_error* error);
+zelda64_io_from_file_ro(struct zelda64_io* io,
+                        FILE* handle,
+                        struct zelda64_allocator allocator,
+                        struct zelda64_error* error);
 
-#endif //LIBZELDA64_SOURCE_H
+#endif //LIBZELDA64_IO_H

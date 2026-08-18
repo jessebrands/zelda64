@@ -24,7 +24,7 @@
 
 #include "bytes.h"
 #include "rom.h"
-#include "source.h"
+#include "io.h"
 
 #define CHUNK_SIZE 1024
 #define READ_COUNT 128
@@ -104,14 +104,14 @@ is_dmadata(struct zelda64_dmadata const e0,
 
 static enum zelda64_result
 zelda64_find_dmadata(struct zelda64_dmadata_info* info,
-                     struct zelda64_source const* source,
+                     struct zelda64_io const* io,
                      struct zelda64_error* error) {
     assert(info != NULL);
-    assert(source != NULL);
+    assert(io != NULL);
     assert(error != NULL);
 
     // Get the ROM size and check its size.
-    zelda64_ssize_t const file_size = zelda64_source_size(source, error);
+    zelda64_ssize_t const file_size = zelda64_io_size(io, error);
     if (file_size < 0) {
         return error->result;
     }
@@ -128,7 +128,7 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
         uint32_t const want = remaining < sizeof chunk ? remaining : sizeof chunk;
 
         // Read in the next chunk of data.
-        if (zelda64_source_read_exact(source, chunk, want, offset, error) < 0) {
+        if (zelda64_io_read_exact(io, chunk, want, offset, error) < 0) {
             return error->result;
         }
 
@@ -142,8 +142,8 @@ zelda64_find_dmadata(struct zelda64_dmadata_info* info,
             // This could be the MAKEROM! Get the next two entries and confirm.
             uint32_t const candidate = offset + i;
             uint8_t entry_buffer[ZELDA64_DMA_ENTRY_SIZE * 2];
-            zelda64_ssize_t const bytes_in = zelda64_source_read_exact(
-                source,
+            zelda64_ssize_t const bytes_in = zelda64_io_read_exact(
+                io,
                 entry_buffer, sizeof entry_buffer,
                 candidate + ZELDA64_DMA_ENTRY_SIZE,
                 error
@@ -190,7 +190,7 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
     // Attempt to find the DMADATA. If we can't find it, this ROM is definitely
     // not DMADATA so we should just quit instead.
     struct zelda64_dmadata_info info = {0};
-    if (zelda64_find_dmadata(&info, &rom->source, error) != ZELDA64_OK) {
+    if (zelda64_find_dmadata(&info, &rom->io, error) != ZELDA64_OK) {
         return error->result;
     }
 
@@ -208,7 +208,7 @@ zelda64_read_dmadata(struct zelda64_rom* rom, struct zelda64_error* error) {
         // Get the entries from the ROM.
         zelda64_offset_t const offset = info.offset + i * ZELDA64_DMA_ENTRY_SIZE;
         uint8_t chunk[ZELDA64_DMA_ENTRY_SIZE * READ_COUNT];
-        if (zelda64_source_read_exact(&rom->source, chunk, want * ZELDA64_DMA_ENTRY_SIZE, offset, error) < 0) {
+        if (zelda64_io_read_exact(&rom->io, chunk, want * ZELDA64_DMA_ENTRY_SIZE, offset, error) < 0) {
             zelda64_free(rom->allocator, entries);
             return error->result;
         }

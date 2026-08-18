@@ -38,12 +38,12 @@
 
 static zelda64_ssize_t
 read_ipl3_bootcode(uint8_t* buffer, size_t const size,
-                   struct zelda64_source const* source,
+                   struct zelda64_io const* io,
                    struct zelda64_dmadata const* dmadata,
                    size_t const dmadata_count,
                    struct zelda64_error* error) {
     assert(buffer != NULL);
-    assert(source != NULL);
+    assert(io != NULL);
     assert(dmadata != NULL);
     assert(dmadata_count > 0);
 
@@ -55,8 +55,8 @@ read_ipl3_bootcode(uint8_t* buffer, size_t const size,
         return -1;
     }
 
-    return zelda64_source_read_exact(
-        source,
+    return zelda64_io_read_exact(
+        io,
         buffer, size,
         IPL3_BOOTCODE_START,
         error
@@ -95,7 +95,7 @@ zelda64_detect_cic(struct zelda64_rom const* rom, struct zelda64_error* error) {
 
     zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
         ipl3_bootcode, sizeof ipl3_bootcode,
-        &rom->source,
+        &rom->io,
         rom->dmadata,
         rom->dmadata_info.count,
         error
@@ -213,11 +213,11 @@ cic_check_code_end(struct check_code_state const* state) {
 }
 
 uint64_t
-zelda64_calculate_check_code(struct zelda64_source const* source,
+zelda64_calculate_check_code(struct zelda64_io const* io,
                              struct zelda64_dmadata const* dmadata,
                              size_t const dmadata_count,
                              struct zelda64_error* error) {
-    if (source == NULL || dmadata == NULL) {
+    if (io == NULL || dmadata == NULL) {
         zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
         return 0;
     }
@@ -231,7 +231,7 @@ zelda64_calculate_check_code(struct zelda64_source const* source,
     // To calculate this, we'll need the IPL3 bootcode.
     zelda64_ssize_t const bytes_in = read_ipl3_bootcode(
         ipl3_bootcode, sizeof ipl3_bootcode,
-        source,
+        io,
         dmadata, dmadata_count,
         error
     );
@@ -257,7 +257,7 @@ zelda64_calculate_check_code(struct zelda64_source const* source,
     while (offset < CHECK_CODE_END) {
         size_t const remaining = CHECK_CODE_END - offset;
         size_t const want = remaining < sizeof chunk ? remaining : sizeof chunk;
-        if (zelda64_source_read_exact(source, chunk, want, offset, error) < 0) {
+        if (zelda64_io_read_exact(io, chunk, want, offset, error) < 0) {
             return 0;
         }
         if (check_code(&state, chunk, want, error) != ZELDA64_OK) {

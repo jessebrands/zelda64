@@ -23,7 +23,7 @@
 
 #include "zelda64/zelda64.h"
 
-#include "source.h"
+#include "io.h"
 
 #define ZELDA64_DMA_ENTRY_SIZE 16
 
@@ -41,7 +41,7 @@ struct zelda64_dmadata_info {
 
 struct zelda64_rom {
     struct zelda64_allocator allocator;
-    struct zelda64_source source;
+    struct zelda64_io io;
 
     struct zelda64_dmadata_info dmadata_info;
     struct zelda64_dmadata* dmadata;
@@ -60,7 +60,7 @@ zelda64_detect_cic(struct zelda64_rom const* rom,
                    struct zelda64_error* error);
 
 uint64_t
-zelda64_calculate_check_code(struct zelda64_source const* source,
+zelda64_calculate_check_code(struct zelda64_io const* io,
                              struct zelda64_dmadata const* dmadata,
                              size_t dmadata_count,
                              struct zelda64_error* error);

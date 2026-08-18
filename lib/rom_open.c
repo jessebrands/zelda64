@@ -23,7 +23,7 @@
 #include "allocator.h"
 #include "error.h"
 #include "rom.h"
-#include "source.h"
+#include "io.h"
 
 struct zelda64_rom*
 zelda64_open(char const* filename, struct zelda64_error* error) {
@@ -62,8 +62,8 @@ zelda64_open_with_allocator(char const* filename,
     *rom = (struct zelda64_rom){0};
     rom->allocator = allocator;
 
-    // Open the ROM source file.
-    if (zelda64_source_file_open(&rom->source, filename, allocator, error) < 0) {
+    // Open the ROM file.
+    if (zelda64_io_fopen_ro(&rom->io, filename, allocator, error) < 0) {
         zelda64_close(rom);
         return NULL;
     }
@@ -90,7 +90,7 @@ zelda64_close(struct zelda64_rom* rom) {
     }
 
     zelda64_free(rom->allocator, rom->dmadata);
-    zelda64_source_close(&rom->source, rom->allocator);
+    zelda64_io_close(&rom->io, rom->allocator);
     zelda64_free(rom->allocator, rom);
 }
 
@@ -106,5 +106,5 @@ zelda64_rom_size(struct zelda64_rom const* rom, struct zelda64_error* error) {
         return -1;
     }
 
-    return zelda64_source_size(&rom->source, error);
+    return zelda64_io_size(&rom->io, error);
 }

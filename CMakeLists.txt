@@ -50,7 +50,7 @@ set(LIBZELDA64_PRIVATE_HEADERS
         lib/error.h
         lib/layout.h
         lib/rom.h
-        lib/source.h)
+        lib/io.h)
 
 set(LIBZELDA64_SOURCES
         lib/allocator.c
@@ -67,7 +67,7 @@ set(LIBZELDA64_SOURCES
         lib/rom_open.c
         lib/rom_read.c
         lib/rom_stat.c
-        lib/source_file.c
+        lib/io_file.c
         lib/version.c)
 
 add_library(libzelda64 SHARED

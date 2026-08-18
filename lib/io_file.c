@@ -1,5 +1,5 @@
 /*
- * source_file.c: C standard library file source
+ * io_file.c: C standard library file I/O
  * Copyright (C) 2026 Jesse Gerard Brands
  *
  * This file is part of libzelda64.
@@ -22,38 +22,38 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "source.h"
+#include "io.h"
 
-struct zelda64_source_file {
+struct zelda64_io_file {
     FILE* handle;
 };
 
 static zelda64_ssize_t
-zelda64_source_file_read(void* opaque,
+zelda64_file_read(void* opaque,
                          void* buffer, size_t size,
                          zelda64_offset_t offset,
                          struct zelda64_error* error);
 
 static zelda64_ssize_t
-zelda64_source_file_size(void* opaque, struct zelda64_error* error);
+zelda64_file_size(void* opaque, struct zelda64_error* error);
 
 static void
-zelda64_source_file_close(void* opaque, struct zelda64_allocator allocator);
+zelda64_file_close(void* opaque, struct zelda64_allocator allocator);
 
 static void
-zelda64_source_file_close_non_owning(void* opaque, struct zelda64_allocator allocator);
+zelda64_file_close_non_owning(void* opaque, struct zelda64_allocator allocator);
 
 int
-zelda64_source_file_open(struct zelda64_source* source,
-                         char const* filename,
-                         struct zelda64_allocator allocator,
-                         struct zelda64_error* error) {
-    if (source == NULL || filename == NULL) {
+zelda64_io_fopen_ro(struct zelda64_io* io,
+                 char const* filename,
+                 struct zelda64_allocator allocator,
+                 struct zelda64_error* error) {
+    if (io == NULL || filename == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
 
     // Allocate the file state struct.
-    struct zelda64_source_file* file = zelda64_alloc(allocator, sizeof *file);
+    struct zelda64_io_file* file = zelda64_alloc(allocator, sizeof *file);
     if (file == NULL) {
         return zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
     }
@@ -66,37 +66,37 @@ zelda64_source_file_open(struct zelda64_source* source,
         return zelda64_set_sys_error(error, ZELDA64_ERRNO, sys_error);
     }
 
-    // Set the source vtable and opaque.
-    *source = (struct zelda64_source){
-        .read = zelda64_source_file_read,
-        .size = zelda64_source_file_size,
-        .close = zelda64_source_file_close,
+    // Set the vtable and opaque.
+    *io = (struct zelda64_io){
+        .read = zelda64_file_read,
+        .size = zelda64_file_size,
+        .close = zelda64_file_close,
         .opaque = file
     };
     return ZELDA64_OK;
 }
 
 enum zelda64_result
-zelda64_source_file_from(struct zelda64_source* source,
-                         FILE* handle,
-                         struct zelda64_allocator const allocator,
-                         struct zelda64_error* error) {
-    if (source == NULL || handle == NULL) {
+zelda64_io_from_file_ro(struct zelda64_io* io,
+                     FILE* handle,
+                     struct zelda64_allocator const allocator,
+                     struct zelda64_error* error) {
+    if (io == NULL || handle == NULL) {
         return zelda64_set_error(error, ZELDA64_INVALID_PARAMETER);
     }
 
     // Allocate the file state struct.
-    struct zelda64_source_file* file = zelda64_alloc(allocator, sizeof *file);
+    struct zelda64_io_file* file = zelda64_alloc(allocator, sizeof *file);
     if (file == NULL) {
         return zelda64_set_error(error, ZELDA64_MEMORY_ERROR);
     }
 
     file->handle = handle;
 
-    *source = (struct zelda64_source){
-        .read = zelda64_source_file_read,
-        .size = zelda64_source_file_size,
-        .close = zelda64_source_file_close_non_owning,
+    *io = (struct zelda64_io){
+        .read = zelda64_file_read,
+        .size = zelda64_file_size,
+        .close = zelda64_file_close_non_owning,
         .opaque = file,
     };
 
@@ -104,11 +104,11 @@ zelda64_source_file_from(struct zelda64_source* source,
 }
 
 static zelda64_ssize_t
-zelda64_source_file_read(void* opaque,
+zelda64_file_read(void* opaque,
                          void* buffer, size_t const size,
                          zelda64_offset_t const offset,
                          struct zelda64_error* error) {
-    struct zelda64_source_file const* file = opaque;
+    struct zelda64_io_file const* file = opaque;
 
     // Start from a clean slate.
     clearerr(file->handle);
@@ -138,8 +138,8 @@ zelda64_source_file_read(void* opaque,
 }
 
 static zelda64_ssize_t
-zelda64_source_file_size(void* opaque, struct zelda64_error* error) {
-    struct zelda64_source_file const* file = opaque;
+zelda64_file_size(void* opaque, struct zelda64_error* error) {
+    struct zelda64_io_file const* file = opaque;
 
     // Start from a clean slate.
     clearerr(file->handle);
@@ -163,14 +163,14 @@ zelda64_source_file_size(void* opaque, struct zelda64_error* error) {
 }
 
 static void
-zelda64_source_file_close(void* opaque, struct zelda64_allocator allocator) {
-    struct zelda64_source_file* file = opaque;
+zelda64_file_close(void* opaque, struct zelda64_allocator allocator) {
+    struct zelda64_io_file* file = opaque;
     fclose(file->handle);
     zelda64_free(allocator, file);
 }
 
 static void
-zelda64_source_file_close_non_owning(void* opaque, struct zelda64_allocator const allocator) {
-    struct zelda64_source_file* file = opaque;
+zelda64_file_close_non_owning(void* opaque, struct zelda64_allocator const allocator) {
+    struct zelda64_io_file* file = opaque;
     zelda64_free(allocator, file);
 }
