@@ -66,7 +66,7 @@ zelda64_rot32(uint32_t const a, unsigned const b) {
 
 static inline uint32_t
 zelda64_align16(uint32_t const n) {
-    return (n + 15u) & -16u;
+    return (n + 15u) & 0xFFFFFFF0;
 }
 
 static inline uint32_t
